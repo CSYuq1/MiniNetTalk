@@ -1,16 +1,21 @@
 #include<print>
-#include"asio.hpp"
+#include"boost/asio.hpp"
 
-int main(int argc, char* argv[]) {
-    asio::io_context io_context;
-    asio::error_code ec;
+using namespace boost;
+
+int main(int argc, char* argv[])
+{
+    asio::io_context   io_context;
+    system::error_code ec;
 
     asio::ip::tcp::resolver resolver(io_context);
     auto                    endpoints = resolver.resolve("time-c.timefreq.bldrdoc.gov", "13");
-    if (!endpoints.empty()) {
+    if (!endpoints.empty())
+    {
         std::println("get ip success!");
         uint32_t i = 1;
-        for (auto&res: endpoints) {
+        for (auto& res : endpoints)
+        {
             std::print(" ip{}: {}\n", i++, res.endpoint().address().to_string());
         }
     }
@@ -23,10 +28,10 @@ int main(int argc, char* argv[]) {
 
     asio::streambuf buffer{1024};
     asio::async_read(socket, buffer,
-                     [&](const asio::error_code&error_code, std::size_t bytes_transferred ) {
+                     [&](const system::error_code& error_code, std::size_t bytes_transferred)
+                     {
                          std::println("buffer.size() = {}", buffer.size());
                          std::println("ec = {}", error_code ? error_code.message() : "success");
-
 
                          std::string data(
                                           asio::buffers_begin(buffer.data()),
@@ -35,8 +40,8 @@ int main(int argc, char* argv[]) {
                          std::println("recv data: {} ", data);
                          buffer.consume(bytes_transferred);
                      });
-
     //std::print("hello");
     io_context.run();
+    socket.close();
     return 0;
 }
