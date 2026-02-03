@@ -17,7 +17,8 @@ FetchContent_Declare(
         GIT_TAG boost-1.90.0
         GIT_SHALLOW    TRUE
 )
-FetchContent_MakeAvailable(toml11 beast)
+FetchContent_MakeAvailable(toml11)
+#FetchContent_MakeAvailable(beast)
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
