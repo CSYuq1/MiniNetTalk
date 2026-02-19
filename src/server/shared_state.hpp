@@ -9,12 +9,11 @@
 #include<boost/beast.hpp>
 #include<unordered_set>
 #include"common.hpp"
+#include"config.hpp"
 
-namespace minitalk {
-    namespace server {
-        //
+
+    namespace minitalk::server {
         class websocket_session;
-        ;
 
         class shared_state : std::enable_shared_from_this<shared_state> {
             std::string const doc_root_;
@@ -24,6 +23,8 @@ namespace minitalk {
 
             // Keep a list of all the connected clients
             std::unordered_set<websocket_session*> sessions_;
+
+            //minitalk::server::config config_;
 
         public:
             explicit
@@ -39,7 +40,7 @@ namespace minitalk {
             void send(std::string message);
         };
     }
-}
+
 
 
 #endif //MININETTALK_SHARE_STATE_HPP

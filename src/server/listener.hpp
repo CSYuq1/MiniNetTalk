@@ -21,7 +21,7 @@ namespace minitalk {
             std::shared_ptr<shared_state> state_;
 
         private:
-            enum class error_type {
+            enum class listener_error_type {
                 open,
                 bind,
                 set_option,
@@ -30,12 +30,12 @@ namespace minitalk {
 
             };
 
-            int log(error_code ec, error_type);
+            int fail(error_code ec, listener_error_type);
             void keep_accept(error_code ec, tcp::socket);
 
         public:
             listener(asio::io_context&                   ioc,
-                     asio::ip::tcp::endpoint&            ep,
+                     asio::ip::tcp::endpoint            ep,
                      std::shared_ptr<shared_state> const& state);
             void run();
         };

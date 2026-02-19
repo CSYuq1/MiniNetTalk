@@ -9,16 +9,32 @@
 #include <boost/beast.hpp>
 #include "shared_state.hpp"
 #include"common.hpp"//set "using namespace",uisng ...
+#include"config.hpp"
 
 namespace minitalk::server {
     class http_session : public std::enable_shared_from_this<http_session> {
-        asio::io_service&               ioc_;
-        beast::tcp_stream               stream_;
-        beast::flat_buffer              buffer_;
-        boost::shared_ptr<shared_state> state_;
+        beast::tcp_stream             stream_;
+        beast::flat_buffer            buffer_;
+        std::shared_ptr<shared_state> state_;
+        // The parser is stored in an optional container so we can
+        // construct it from scratch it at the beginning of each new message.
+        //construct → use → destroy
+
+        std::optional<http::request_parser<http::string_body>> parser_;
+
+        struct send_lambda;
+
+        void fail(beast::error_code ec, char const* what);
+        void do_read();
+        void on_read(beast::error_code ec, std::size_t);
+        void on_write(beast::error_code ec, std::size_t, bool close);
 
     public:
-        http_session(asio::io_context ioc);
+        http_session(
+            tcp::socket&&                        socket,
+            std::shared_ptr<shared_state> const& state);
+
+        void run();
     };
 }
 
