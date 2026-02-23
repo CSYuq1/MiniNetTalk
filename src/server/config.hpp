@@ -4,6 +4,7 @@
 
 #ifndef MININETTALK_CONFIG_HPP
 #define MININETTALK_CONFIG_HPP
+#include <filesystem>
 
 namespace minitalk::server {
     struct config {
