@@ -46,7 +46,7 @@ handle_request(
 
     http::request<Body, http::basic_fields<Allocator>>&& req) {
     // return  bad request
-    auto const bad_req =[ver=req.version(),keep_alive=req.keep_alive()]
+    auto const bad_req = [ver=req.version(),keep_alive=req.keep_alive()]
     (std::string_view why) {
         //http 头部startline 的部分是强制性设置，可以在构造函数中完成
         http::response<http::string_body> res{http::status::bad_request, ver};
@@ -55,13 +55,13 @@ handle_request(
         //声明body的类型，让客户端可以解析
         res.set(http::field::content_type, "text/html");
         res.keep_alive(keep_alive);
-        res.body() = "Error: ' " + std::string(why) + "'";
+        res.body() = "Bad request: ' " + std::string(why) + "'";
         //填写body 长度，必须在最后面调用
         res.prepare_payload();
         return res;
     };
 
-    auto const not_found =[ver=req.version(),keep_alive=req.keep_alive()]
+    auto const not_found = [ver=req.version(),keep_alive=req.keep_alive()]
     (std::string_view target) {
         http::response<http::string_body> res{http::status::not_found, ver};
         res.set(http::field::server, "minitalk");
@@ -72,10 +72,29 @@ handle_request(
         return res;
     };
 
-    auto const server_error=[ver=req.version(),keep_alive=req.keep_alive()]
+    auto const server_error = [ver=req.version(),keep_alive=req.keep_alive()]
     (std::string_view why) {
         http::response<http::string_body> res{http::status::internal_server_error, ver};
+        res.set(http::field::server, "minitalk");
+        res.set(http::field::content_type, "text/html");
+        res.keep_alive(keep_alive);
+        res.body() = "Server error: '" + std::string(why) + "'";
+        res.prepare_payload();
+        return res;
     };
+
+    //http::verb 是http::method 的口语化叫法
+    if( req.method() != http::verb::get &&
+       req.method() != http::verb::head)
+        return bad_req("Unknown HTTP-method");
+
+    // 请求路径必须是绝对的，且不能包含 ".."。
+    if( req.target().empty() ||
+        req.target()[0] != '/' ||
+        req.target().find("..") != beast::string_view::npos)
+        return bad_req("Illegal request-target");
+
+
 }
 
 minitalk::server::http_session::http_session(
