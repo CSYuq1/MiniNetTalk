@@ -1,24 +1,16 @@
 //
 // Created by yuqi on 2026/2/2.
 //
-
-#include "http_session.hpp"
-
 #include <iostream>
-
+#include "http_session.hpp"
 #include "websocket_session.hpp"
+
 
 /**
  * @tparam Body
  * @tparam Allocator http-header-fields 的底层内存模型
  * @param doc_root  url
- *
- */
-template <class Body, class Allocator>
-http::message_generator
-handle_request(
-    beast::string_view doc_root,
-    /// HTTP header fields container.
+ HTTP header fields container.
     ///
     /// This stores the HTTP header section of the request.
     ///
@@ -46,9 +38,26 @@ handle_request(
     ///   - connection behavior
     ///   - host
     ///
+ */
+template <class Body, class Allocator>
+http::message_generator
+handle_request(
+    beast::string_view doc_root,
+
     http::request<Body, http::basic_fields<Allocator>>&& req) {
     // return  bad request
-    auto const bad_req =[]
+    auto const bad_req = [ver=req.version(),keep_alive=req.keep_alive()]
+    (std::string_view why_msg) {
+        //http 头部startline 的部分是强制性设置，可以在构造函数中完成
+        http::response<http::string_body> res{http::status::bad_request, ver};
+        //方便调试的字段，可以不写
+        res.set(http::field::server,"minitalk");
+
+        res.
+        res.set(http::field::content_type, "text/html");
+        //填写body 长度，必须在最后面调用
+        res.prepare_payload();
+    };
 }
 
 minitalk::server::http_session::http_session(
