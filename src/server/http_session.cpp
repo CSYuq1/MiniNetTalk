@@ -46,17 +46,35 @@ handle_request(
 
     http::request<Body, http::basic_fields<Allocator>>&& req) {
     // return  bad request
-    auto const bad_req = [ver=req.version(),keep_alive=req.keep_alive()]
-    (std::string_view why_msg) {
+    auto const bad_req =[ver=req.version(),keep_alive=req.keep_alive()]
+    (std::string_view why) {
         //http 头部startline 的部分是强制性设置，可以在构造函数中完成
         http::response<http::string_body> res{http::status::bad_request, ver};
         //方便调试的字段，可以不写
-        res.set(http::field::server,"minitalk");
-
-        res.
+        res.set(http::field::server, "minitalk");
+        //声明body的类型，让客户端可以解析
         res.set(http::field::content_type, "text/html");
+        res.keep_alive(keep_alive);
+        res.body() = "Error: ' " + std::string(why) + "'";
         //填写body 长度，必须在最后面调用
         res.prepare_payload();
+        return res;
+    };
+
+    auto const not_found =[ver=req.version(),keep_alive=req.keep_alive()]
+    (std::string_view target) {
+        http::response<http::string_body> res{http::status::not_found, ver};
+        res.set(http::field::server, "minitalk");
+        res.set(http::field::content_type, "text/html");
+        res.keep_alive(keep_alive);
+        res.body() = "The' " + std::string(target) + "' not found!";
+        res.prepare_payload();
+        return res;
+    };
+
+    auto const server_error=[ver=req.version(),keep_alive=req.keep_alive()]
+    (std::string_view why) {
+        http::response<http::string_body> res{http::status::internal_server_error, ver};
     };
 }
 
