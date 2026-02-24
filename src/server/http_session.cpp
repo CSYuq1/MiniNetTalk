@@ -8,12 +8,18 @@
 
 #include "websocket_session.hpp"
 
-//编译器通过模板参数推导（template argument deduction）自动推断 Body 和 Allocator 类型
+/**
+ *
+ * @tparam Body
+ * @tparam Allocator
+ * @param doc_root  url
+ */
 template <class Body, class Allocator>
 http::message_generator
 handle_request(
     beast::string_view                                   doc_root,
     http::request<Body, http::basic_fields<Allocator>>&& req) {
+
 }
 
 minitalk::server::http_session::http_session(
@@ -42,7 +48,10 @@ void minitalk::server::http_session::fail(beast::error_code ec, char const* what
     std::cerr << what << ": " << ec.message() << std::endl;
 }
 
-
+/**
+ * @brief 如果有连接请求优先升级，否则正常响应http
+ *
+ */
 void minitalk::server::http_session::on_read(beast::error_code ec, std::size_t) {
     // 这意味着他们关闭了连接
     if (ec == http::error::end_of_stream) {
