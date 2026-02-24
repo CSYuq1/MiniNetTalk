@@ -9,17 +9,46 @@
 #include "websocket_session.hpp"
 
 /**
- *
  * @tparam Body
- * @tparam Allocator
+ * @tparam Allocator http-header-fields 的底层内存模型
  * @param doc_root  url
+ *
  */
 template <class Body, class Allocator>
 http::message_generator
 handle_request(
-    beast::string_view                                   doc_root,
+    beast::string_view doc_root,
+    /// HTTP header fields container.
+    ///
+    /// This stores the HTTP header section of the request.
+    ///
+    /// HTTP message layout:
+    ///
+    ///   GET /index.html HTTP/1.1
+    ///   Host: example.com
+    ///   Connection: keep-alive
+    ///   Content-Length: 5
+    ///
+    ///   Hello
+    ///
+    /// The lines above (Host, Connection, Content-Length)
+    /// are stored in `http::basic_fields`.
+    ///
+    /// In Beast:
+    ///
+    ///   http::request
+    ///     ├── basic_fields (header fields)
+    ///     └── body
+    ///
+    /// Header fields describe metadata such as:
+    ///   - content type
+    ///   - content length
+    ///   - connection behavior
+    ///   - host
+    ///
     http::request<Body, http::basic_fields<Allocator>>&& req) {
-
+    // return  bad request
+    auto const bad_req =[]
 }
 
 minitalk::server::http_session::http_session(
@@ -65,6 +94,7 @@ void minitalk::server::http_session::on_read(beast::error_code ec, std::size_t) 
         return fail(ec, "read");
 
     // 检查是否是 WebSocket 升级请求
+    //parser_->get() 获取request的引用
     if (websocket::is_upgrade(parser_->get())) {
         // 创建 websocket 会话，转移所有权
         // 包括 socket 和 HTTP 请求。
@@ -73,8 +103,8 @@ void minitalk::server::http_session::on_read(beast::error_code ec, std::size_t) 
     }
 
 
-
-    http::message_generator msg =handle_request(state_->doc_root(), parser_->release());
+    http::message_generator msg = handle_request(state_->doc_root(),
+                                                 /*取出 request 对象，并清空 parser*/parser_->release());
 
     // 确定是否应该关闭连接
     bool keep_alive = msg.keep_alive();
