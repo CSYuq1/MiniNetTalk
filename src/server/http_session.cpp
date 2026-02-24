@@ -84,16 +84,19 @@ handle_request(
     };
 
     //http::verb 是http::method 的口语化叫法
-    if( req.method() != http::verb::get &&
-       req.method() != http::verb::head)
+    if (req.method() != http::verb::get &&
+        req.method() != http::verb::head)
         return bad_req("Unknown HTTP-method");
 
     // 请求路径必须是绝对的，且不能包含 ".."。
-    if( req.target().empty() ||
+    //这相当于一个究极简化的安全检查,实际生产环境会包装为独立函数
+    if (req.target().empty() ||
         req.target()[0] != '/' ||
         req.target().find("..") != beast::string_view::npos)
         return bad_req("Illegal request-target");
 
+    std::string path(path_catch(doc_root, req.target()));
+    if (req)
 
 }
 
