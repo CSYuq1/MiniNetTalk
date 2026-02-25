@@ -13,7 +13,8 @@ namespace minitalk::server {
         static constexpr auto        default_timeout        = std::chrono::seconds(30);
         static constexpr uint16_t    default_listen_port    = 49999;
         static constexpr std::string default_listen_address = "0.0.0.0";
-        static constexpr std::string default_doc_root_path  = "minitalk";
+        static constexpr std::string default_doc_root_path  = "unset";
+        static constexpr std::string project_name           = "minitalk";
 
         //need  construct:
         uint_least16_t        listen_port_;

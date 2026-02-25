@@ -5,11 +5,84 @@
 #include "http_session.hpp"
 #include "websocket_session.hpp"
 
+/**
+ *  Multipurpose Internet Mail Extensions -> mime 文件的后缀
+ * @brief 处理path后缀，返回正确的content_type
+ * @param path 请求的路径
+ * @return content_type
+ */
+std::string_view mime_type(std::string_view path) {
+    using beast::iequals;
+
+    auto             pos = path.rfind('.');
+    std::string_view ext = (pos == beast::string_view::npos) //npos 是没有找到的意思
+                               ? std::string_view{}
+                               : path.substr(pos);
+    // "start----pos----end" ->  "pos---end"只保留pos到结尾，相当于substr(pos,str.size()-1)
+
+    struct mapping {
+        std::string_view ext;
+        std::string_view mime;
+    };
+
+    static constexpr mapping table[] = {
+        {".htm", "text/html"},
+        {".html", "text/html"},
+        {".php", "text/html"},
+        {".css", "text/css"},
+        {".txt", "text/plain"},
+        {".js", "application/javascript"},
+        {".json", "application/json"},
+        {".xml", "application/xml"},
+        {".swf", "application/x-shockwave-flash"},
+        {".flv", "video/x-flv"},
+        {".png", "image/png"},
+        {".jpe", "image/jpeg"},
+        {".jpeg", "image/jpeg"},
+        {".jpg", "image/jpeg"},
+        {".gif", "image/gif"},
+        {".bmp", "image/bmp"},
+        {".ico", "image/vnd.microsoft.icon"},
+        {".tiff", "image/tiff"},
+        {".tif", "image/tiff"},
+        {".svg", "image/svg+xml"},
+        {".svgz", "image/svg+xml"},
+    };
+
+    for (auto const& m : table)
+        if (iequals(ext, m.ext))
+            return m.mime;
+
+    return "application/octet-stream"; // 更通用的默认值
+}
+
+std::string
+path_concat(
+    std::string_view base,
+    std::string_view target) {
+    if (base.empty())[[unlikely]]
+        return std::string(target);
+
+    std::string res(base);
+
+    //Windows
+#ifdef BOOST_MSVC
+    std::cout << "didnt write this func ";
+
+    //Linux
+#else
+    //移除多余的‘/’ 假如不移除 --> /var/ + /www/images/logo.png == /var//www/images/logo.png
+    if (res.back() == '/')
+        res.pop_back();
+    res.append(target);
+#endif
+    return res;
+}
 
 /**
  * @tparam Body
  * @tparam Allocator http-header-fields 的底层内存模型
- * @param doc_root  url
+ * @param doc_root  服务器储存http文件的根目录
  HTTP header fields container.
     ///
     /// This stores the HTTP header section of the request.
@@ -51,7 +124,7 @@ handle_request(
         //http 头部startline 的部分是强制性设置，可以在构造函数中完成
         http::response<http::string_body> res{http::status::bad_request, ver};
         //方便调试的字段，可以不写
-        res.set(http::field::server, "minitalk");
+        res.set(http::field::server, minitalk::server::config::project_name);
         //声明body的类型，让客户端可以解析
         res.set(http::field::content_type, "text/html");
         res.keep_alive(keep_alive);
@@ -64,7 +137,7 @@ handle_request(
     auto const not_found = [ver=req.version(),keep_alive=req.keep_alive()]
     (std::string_view target) {
         http::response<http::string_body> res{http::status::not_found, ver};
-        res.set(http::field::server, "minitalk");
+        res.set(http::field::server, minitalk::server::config::project_name);
         res.set(http::field::content_type, "text/html");
         res.keep_alive(keep_alive);
         res.body() = "The' " + std::string(target) + "' not found!";
@@ -75,7 +148,7 @@ handle_request(
     auto const server_error = [ver=req.version(),keep_alive=req.keep_alive()]
     (std::string_view why) {
         http::response<http::string_body> res{http::status::internal_server_error, ver};
-        res.set(http::field::server, "minitalk");
+        res.set(http::field::server, minitalk::server::config::project_name);
         res.set(http::field::content_type, "text/html");
         res.keep_alive(keep_alive);
         res.body() = "Server error: '" + std::string(why) + "'";
@@ -83,21 +156,61 @@ handle_request(
         return res;
     };
 
-    //http::verb 是http::method 的口语化叫法
-    if (req.method() != http::verb::get &&
-        req.method() != http::verb::head)
-        return bad_req("Unknown HTTP-method");
-
-    // 请求路径必须是绝对的，且不能包含 ".."。
-    //这相当于一个究极简化的安全检查,实际生产环境会包装为独立函数
     if (req.target().empty() ||
         req.target()[0] != '/' ||
-        req.target().find("..") != beast::string_view::npos)
+        //路径穿越漏洞 ，防止在上级读取敏感文件
+        req.target().find("..") != std::string_view::npos)
         return bad_req("Illegal request-target");
 
-    std::string path(path_catch(doc_root, req.target()));
-    if (req)
+    std::string path(path_concat(doc_root, req.target()));
+    if (req.target().back() == '/')
+        path.append("index.html");
 
+    error_code                  ec;
+    http::file_body::value_type body;
+    body.open(path.c_str(), beast::file_mode::scan, ec);
+
+    //处理文件目录不存在的问题
+    if (ec == boost::system::errc::no_such_file_or_directory)[[unlikely]]{
+    }
+
+    if (ec) [[unlikely]]{
+        return server_error(ec.message());
+    }
+
+    //**HTTP 的 HEAD 语义要求“返回与 GET 尽量一致的响应头（headers），但响应体（body）必须为空
+    auto const head = [path=path,ver=req.version(),keep_alive=req.keep_alive(),body_size=body.size()]
+    () {
+        http::response<http::empty_body> res{http::status::ok, ver};
+        res.set(http::field::server, minitalk::server::config::project_name);
+        res.set(http::field::content_type, mime_type(path));
+        res.content_length(body_size);
+        res.keep_alive(keep_alive);
+        return res;
+    };
+
+    auto const get = [path=path,ver=req.version(),keep_alive=req.keep_alive(),&body,body_size=body.size()] {
+        http::response<http::file_body> res{
+            std::piecewise_construct, //<file_body>特有的一种构造方式
+            std::make_tuple(std::move(body)),
+            //通过传入构造参数而不是构造好的对象，使子对象在目标内存中直接构造，从而避免临时对象、避免拷贝和额外移动，同时支持 move-only 类型，并提供统一的泛型构造机制。
+            std::make_tuple(http::status::ok, ver)
+        };
+        res.set(http::field::server, minitalk::server::config::project_name);
+        res.set(http::field::content_type, mime_type(path));
+        res.content_length(body_size);
+        res.keep_alive(keep_alive);
+        return res;
+    };
+
+    switch (req.method()) {
+    case http::verb::head:
+        return head();
+    case http::verb::get: [[likely]]
+            return get();
+    default: [[unlikely]]
+            return bad_req("Unknown HTTP-method");
+    }
 }
 
 minitalk::server::http_session::http_session(
@@ -117,7 +230,7 @@ void minitalk::server::http_session::do_read() {
 
     //设置超时,防止服务器资源耗尽
     stream_.expires_after(std::chrono::seconds(config::default_timeout));
-
+    //parser read data from buf
     http::async_read(stream_, buffer_, *parser_, beast::bind_front_handler(&http_session::on_read, shared_from_this()));
 }
 
