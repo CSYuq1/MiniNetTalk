@@ -14,6 +14,7 @@
 
 namespace minitalk::server {
         class websocket_session : std::enable_shared_from_this<websocket_session> {
+                //动态可增长的连续内存缓冲区
                 beast::flat_buffer                              buffer_;
                 websocket::stream<beast::tcp_stream>            ws_; //beast::tcp_stream 最常用 还有支持ssl的stream底层
                 std::shared_ptr<shared_state>                   state_;

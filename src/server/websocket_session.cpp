@@ -33,16 +33,42 @@ namespace minitalk::server {
         state_->join(this);
 
         ws_.async_read(buffer_,
-            beast::bind_front_handler(&websocket_session::on_read,
-                                        shared_from_this()));
+                       beast::bind_front_handler(&websocket_session::on_read,
+                                                 shared_from_this()));
+    }
+
+    void websocket_session::on_read(error_code ec, [[maybe_unused]] std::size_t bytes_transferred) {
+        if (ec) [[unlikely]]
+            fail(ec, "read");
+        // send , on_send 会在里面被调用
+        state_->send(beast::buffers_to_string(buffer_.data()));
+        // consume all buffer ->clear buffer
+        buffer_.consume(buffer_.size());
+
+        //继续读信息
+        ws_.async_read(buffer_, beast::bind_front_handler(
+                                                          &websocket_session::on_write,
+                                                          shared_from_this()));
+    }
+
+    void websocket_session::send(std::shared_ptr<const std::string> const& msg) {
+        asio::post(ws_.get_executor(),//get ioc
+                   beast::bind_front_handler(
+                                             &websocket_session::on_send,
+                                             shared_from_this()
+                                            ));
+    }
+
+    void websocket_session::on_send(std::shared_ptr<std::string const> const& msg) {
+        queue_.push_back(msg);
+
+        //如果队列里已经有正在发送的消息，就什么都不做。
+        if (queue_.size()>1)
+            return;
 
     }
 
-    void websocket_session::on_read(error_code ec,std::size_t bytes_transferred) {
-            if (ec) [[unlikely]]
-                fail(ec, "read");
-
-            state_->send(beast::)
+    void websocket_session::on_write(error_code ec,[[maybe_unused]] std::size_t bytes_transferred) {
 
     }
 }
