@@ -4,17 +4,17 @@
 //
 #include<cstdint>
 #include<print>
-#include<filesystem>
+#include <filesystem>
 #include <iostream>
 #include <utility>
 
-#include"boost/asio.hpp"
-#include"boost/beast.hpp"
+#include "boost/asio.hpp"
+#include "boost/beast.hpp"
 
-#include"common.hpp"//set "using namespace"
-#include "listener.hpp"
-#include"shared_state.hpp"
-#include "config.hpp"
+#include "server/common.hpp"
+#include "server/listener.hpp"
+#include "server/shared_state.hpp"
+#include "server/config.hpp"
 #pragma once
 
 
@@ -47,10 +47,6 @@ int main(int argc, char* argv[]) noexcept {
                            ioc.stop();
                        });
 
-
-    /***
-     *
-     */
     std::vector<std::thread> v;
     //设置n-1 个线程,main本身也算一个线程
     v.reserve(config->thread_count_ - 1);

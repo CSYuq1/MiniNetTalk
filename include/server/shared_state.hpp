@@ -8,11 +8,12 @@
 #include <boost/asio.hpp>
 #include<boost/beast.hpp>
 #include<unordered_set>
-#include"common.hpp"
-#include"config.hpp"
+
+#include "server/common.hpp"
+#include "server/config.hpp"
 
 
-    namespace minitalk::server {
+namespace minitalk::server {
         class websocket_session;
 
         class shared_state : std::enable_shared_from_this<shared_state> {

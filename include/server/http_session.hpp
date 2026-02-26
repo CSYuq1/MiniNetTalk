@@ -7,9 +7,10 @@
 #include <memory>
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
-#include "shared_state.hpp"
-#include"common.hpp"//set "using namespace",uisng ...
-#include"config.hpp"
+
+#include "server/shared_state.hpp"
+#include "server/common.hpp"
+#include "server/config.hpp"
 
 namespace minitalk::server {
     class http_session : public std::enable_shared_from_this<http_session> {

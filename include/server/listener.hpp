@@ -8,7 +8,7 @@
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
 
-#include"common.hpp"//set "using namespace",uisng ...
+#include "server/common.hpp"
 
 namespace minitalk {
     namespace server {
