@@ -36,7 +36,8 @@ target_link_libraries(server
         PRIVATE
         Threads::Threads
 )
-
+#target_compile_options(server PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+#target_link_options(server PRIVATE -fsanitize=address)
 if(MININETTALK_LINK_BOOST_SYSTEM)
     target_link_libraries(server PRIVATE Boost::system)
 endif()

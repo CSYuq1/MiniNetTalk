@@ -172,6 +172,7 @@ handle_request(
 
     //处理文件目录不存在的问题
     if (ec == boost::system::errc::no_such_file_or_directory)[[unlikely]]{
+        return not_found(req.target());
     }
 
     if (ec) [[unlikely]]{
@@ -231,7 +232,7 @@ void minitalk::server::http_session::do_read() {
     //设置超时,防止服务器资源耗尽
     stream_.expires_after(std::chrono::seconds(config::default_timeout));
     //parser read data from buf
-    http::async_read(stream_, buffer_, *parser_, beast::bind_front_handler(&http_session::on_read, shared_from_this()));
+    http::async_read(stream_, buffer_, parser_->get(), beast::bind_front_handler(&http_session::on_read, shared_from_this()));
 }
 
 void minitalk::server::http_session::fail(beast::error_code ec, char const* what) {
@@ -260,7 +261,7 @@ void minitalk::server::http_session::on_read(beast::error_code ec, std::size_t) 
     if (websocket::is_upgrade(parser_->get())) {
         // 创建 websocket 会话，转移所有权
         // 包括 socket 和 HTTP 请求。
-        boost::make_shared<websocket_session>(stream_.release_socket(), state_)->run(parser_->release());
+        std::make_shared<websocket_session>(stream_.release_socket(), state_)->run(parser_->release());
         return;
     }
 

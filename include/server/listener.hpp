@@ -30,7 +30,7 @@ namespace minitalk {
 
             };
 
-            int fail(error_code ec, listener_error_type);
+            int fail(error_code ec, std::string erro_msg);
             void keep_accept(error_code ec, tcp::socket);
 
         public:

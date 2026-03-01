@@ -38,8 +38,15 @@ namespace minitalk::server {
     }
 
     void websocket_session::on_read(error_code ec, [[maybe_unused]] std::size_t bytes_transferred) {
-        if (ec) [[unlikely]]
+        if (ec) [[unlikely]]{
             fail(ec, "read");
+        }
+
+        auto msg = beast::buffers_to_string(buffer_.data());
+
+        std::cout << "[RECV] from session " << this
+                  << " : " << msg << "\n";
+
         // send , on_send 会在里面被调用
         state_->send(beast::buffers_to_string(buffer_.data()));
         // consume all buffer ->clear buffer
@@ -47,7 +54,7 @@ namespace minitalk::server {
 
         //继续读信息
         ws_.async_read(buffer_, beast::bind_front_handler(
-                                                          &websocket_session::on_write,
+                                                          &websocket_session::on_read,
                                                           shared_from_this()));
     }
 
@@ -55,7 +62,7 @@ namespace minitalk::server {
         asio::post(ws_.get_executor(),//get ioc
                    beast::bind_front_handler(
                                              &websocket_session::on_send,
-                                             shared_from_this()
+                                             shared_from_this(),msg
                                             ));
     }
 

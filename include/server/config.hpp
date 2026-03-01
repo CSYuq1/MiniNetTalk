@@ -9,12 +9,12 @@
 namespace minitalk::server {
     struct config {
         //constexpr:
-        static constexpr std::size_t default_body_limit     = 10000;
-        static constexpr auto        default_timeout        = std::chrono::seconds(30);
-        static constexpr uint16_t    default_listen_port    = 49999;
-        static constexpr std::string default_listen_address = "0.0.0.0";
-        static constexpr std::string default_doc_root_path  = "unset";
-        static constexpr std::string project_name           = "minitalk";
+        static constexpr std::size_t      default_body_limit     = 10000;
+        static constexpr auto             default_timeout        = std::chrono::seconds(30);
+        static constexpr uint16_t         default_listen_port    = 49999;
+        static constexpr std::string_view default_listen_address = "0.0.0.0";
+        static constexpr std::string_view default_doc_root_path  = "/home/yuqi/CLionProjects/MiniNetTalk/static";
+        static constexpr std::string_view project_name           = "minitalk";
 
         //need  construct:
         uint_least16_t        listen_port_;

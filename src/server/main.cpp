@@ -31,11 +31,14 @@ int main(int argc, char* argv[]) noexcept {
     else {
         config = minitalk::server::config();
     }
+
+    std::cout<<"doc_root:"<<config->doc_root_path_<<'\n';
+
     asio::io_context ioc;
     error_code       ec;
 
     std::make_shared<minitalk::server::listener>(ioc,
-                                                 tcp::endpoint(config->address_, config->listen_port_),
+                                                 tcp::endpoint(tcp::v6(), config->listen_port_),
                                                  std::make_shared<
                                                      minitalk::server::shared_state>(config->doc_root_path_))->run();
 

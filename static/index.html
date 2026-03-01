@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>MiniNetTalk WebSocket Chat Client</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; padding: 16px; }
+    input, button { font: inherit; padding: 8px 10px; margin: 4px 0; }
+    #messages { width: 720px; max-width: 100%; height: 420px; white-space: pre-wrap; overflow: auto; border: 1px solid #ccc; padding: 8px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .muted { opacity: .75; font-size: 12px; }
+    .tag { display: inline-block; padding: 2px 8px; border: 1px solid #ccc; border-radius: 999px; font-size: 12px; }
+  </style>
+</head>
+
+<body>
+<h1>WebSocket Chat Client 💬</h1>
+
+<p class="muted">
+  说明：本页面会自动连接你的服务器（不需要手填 URI）。<br>
+  - 若页面通过 <span class="tag">http://host:port</span> 打开，将自动连接 <span class="tag">ws://host:port</span><br>
+  - 若通过 <span class="tag">file://</span> 打开，将默认连接 <span class="tag">ws://localhost:49999</span>
+</p>
+
+<div class="row">
+  <span class="tag" id="status">DISCONNECTED</span>
+  <span class="muted" id="endpoint"></span>
+</div>
+
+<!-- 高级选项：一般不需要 -->
+<details style="margin: 8px 0;">
+  <summary>高级选项（一般不用点开）</summary>
+  <div class="row">
+    WebSocket 路径：
+    <input id="path" size="10" value="/ws">
+    覆盖 WS 地址（留空=自动推导）：
+    <input id="override" size="42" placeholder="例如 ws://192.168.1.10:49999/ws">
+  </div>
+</details>
+
+<div class="row">
+  <button id="connect">Connect</button>
+  <button id="disconnect" disabled>Disconnect</button>
+</div>
+
+<div class="row">
+  Your Name:
+  <input id="userName" size="24" placeholder="yuqi（可选）">
+</div>
+
+<pre id="messages"></pre>
+
+<div style="margin-top: 8px;">
+  Message<br>
+  <div class="row">
+    <input id="sendMessage" size="60" value="" placeholder="输入消息，回车发送">
+    <button id="send" disabled>Send</button>
+  </div>
+</div>
+
+<script>
+  let ws = null;
+
+  const statusEl = document.getElementById("status");
+  const endpointEl = document.getElementById("endpoint");
+  const messagesEl = document.getElementById("messages");
+
+  const connectBtn = document.getElementById("connect");
+  const disconnectBtn = document.getElementById("disconnect");
+  const sendBtn = document.getElementById("send");
+
+  const userNameEl = document.getElementById("userName");
+  const sendMessageEl = document.getElementById("sendMessage");
+
+  const pathEl = document.getElementById("path");
+  const overrideEl = document.getElementById("override");
+
+  function showMessage(msg) {
+    messagesEl.textContent += msg + "\n";
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function setStatus(text, ok) {
+    statusEl.textContent = text;
+    statusEl.style.color = ok ? "#16a34a" : "#dc2626";
+    statusEl.style.borderColor = ok ? "#16a34a" : "#dc2626";
+  }
+
+  function buildWsUrl() {
+    const override = overrideEl.value.trim();
+    if (override) return override;
+
+    const WS_PATH = (pathEl.value.trim() || "/ws");
+
+    // 只支持 http / ws（你说服务器不支持 https）
+    // 若是 file:// 打开，则 location.host 为空，fallback 到 localhost:49999
+    const host = location.host && location.protocol.startsWith("http")
+            ? location.host
+            : "localhost:49999";
+
+    return `ws://${host}${WS_PATH}`;
+  }
+
+  function enableUi(connected) {
+    connectBtn.disabled = connected;
+    disconnectBtn.disabled = !connected;
+    sendBtn.disabled = !connected;
+    sendMessageEl.disabled = !connected;
+  }
+
+  connectBtn.onclick = function() {
+    const url = buildWsUrl();
+    endpointEl.textContent = `WS: ${url}`;
+
+    try {
+      ws = new WebSocket(url);
+    } catch (e) {
+      setStatus("DISCONNECTED", false);
+      enableUi(false);
+      showMessage("[error] WebSocket 创建失败: " + e);
+      return;
+    }
+
+    setStatus("CONNECTING", false);
+    enableUi(false);
+
+    ws.onopen = function() {
+      setStatus("CONNECTED", true);
+      enableUi(true);
+      showMessage("[connection opened]");
+      sendMessageEl.focus();
+    };
+
+    ws.onclose = function(ev) {
+      setStatus("DISCONNECTED", false);
+      enableUi(false);
+      showMessage(`[connection closed] code=${ev.code} reason=${ev.reason || "(none)"}`);
+      ws = null;
+    };
+
+    ws.onmessage = function(ev) {
+      showMessage(ev.data);
+    };
+
+    ws.onerror = function(ev) {
+      showMessage("[error]");
+      console.log(ev);
+    };
+  };
+
+  disconnectBtn.onclick = function() {
+    if (ws) ws.close(1000, "client closing");
+  };
+
+  sendBtn.onclick = function() {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+    const name = userNameEl.value.trim() || "yuqi";
+    const msg = sendMessageEl.value;
+
+    // 保持和你原版一致：发送纯文本 "name: message"
+    ws.send(name + ": " + msg);
+    sendMessageEl.value = "";
+    sendMessageEl.focus();
+  };
+
+  sendMessageEl.onkeyup = function(ev) {
+    ev.preventDefault();
+    if (ev.key === "Enter") sendBtn.click();
+  };
+
+  // 初始状态
+  setStatus("DISCONNECTED", false);
+  enableUi(false);
+  endpointEl.textContent = "（将自动推导 WS 地址，无需手填）";
+</script>
+</body>
+</html>
