@@ -60,15 +60,36 @@ namespace minitalk::server {
     }
 
     void websocket_session::on_send(std::shared_ptr<std::string const> const& msg) {
+
         queue_.push_back(msg);
 
         //如果队列里已经有正在发送的消息，就什么都不做。
         if (queue_.size()>1)
             return;
 
+        ws_.async_write(
+       asio::buffer(*queue_.front()),
+       beast::bind_front_handler(
+           &websocket_session::on_write,
+           shared_from_this()));
+
+
     }
 
     void websocket_session::on_write(error_code ec,[[maybe_unused]] std::size_t bytes_transferred) {
+        //处理write 过程出现的错误
+        if (ec)
+            return fail (ec,"write");
+        //写完，就清除队列元素 vector 元素排列紧凑，可以运用缓存，
+        queue_.erase(queue_.begin());
+
+        // Send the next message if any
+        if(! queue_.empty())
+            ws_.async_write(
+                asio::buffer(*queue_.front()),
+                beast::bind_front_handler(
+                    &websocket_session::on_write,
+                    shared_from_this()));
 
     }
 }

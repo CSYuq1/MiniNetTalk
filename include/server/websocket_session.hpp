@@ -18,6 +18,8 @@ namespace minitalk::server {
                 beast::flat_buffer                              buffer_;
                 websocket::stream<beast::tcp_stream>            ws_; //beast::tcp_stream 最常用 还有支持ssl的stream底层
                 std::shared_ptr<shared_state>                   state_;
+
+                //cache locality 小型队列下 vector 可以吃到缓存的福利
                 std::vector<std::shared_ptr<std::string const>> queue_; //写入的消息队列，一个用户一个websocket，一个队列
                 //IO 回调层 集中放在这里-------------------------------------->
                 static void fail(error_code ec, const std::string what);
