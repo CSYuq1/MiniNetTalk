@@ -16,8 +16,8 @@
 namespace minitalk::server {
         class websocket_session;
 
-        class shared_state : std::enable_shared_from_this<shared_state> {
-            std::string const doc_root_;
+        class shared_state : public std::enable_shared_from_this<shared_state> {
+            const std::string doc_root_;
 
             // This mutex synchronizes all access to sessions_
             std::mutex mutex_;
