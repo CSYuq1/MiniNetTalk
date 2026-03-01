@@ -2,177 +2,607 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <title>MiniNetTalk WebSocket Chat Client</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MiniNetTalk</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; padding: 16px; }
-    input, button { font: inherit; padding: 8px 10px; margin: 4px 0; }
-    #messages { width: 720px; max-width: 100%; height: 420px; white-space: pre-wrap; overflow: auto; border: 1px solid #ccc; padding: 8px; }
-    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .muted { opacity: .75; font-size: 12px; }
-    .tag { display: inline-block; padding: 2px 8px; border: 1px solid #ccc; border-radius: 999px; font-size: 12px; }
+    :root{
+      --bg:#0e1621;
+      --panel:#17212b;
+      --panel2:#1f2c3a;
+      --text:#e6edf3;
+      --muted:#9fb0c0;
+      --accent:#2b7cff;
+      --danger:#ff5d5d;
+      --ok:#22c55e;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+      --radius2: 14px;
+      --gap: 12px;
+      --font: system-ui, -apple-system, Segoe UI, Roboto, "PingFang SC","Microsoft YaHei", Arial, sans-serif;
+    }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0; background: radial-gradient(1200px 700px at 20% 10%, #1b2a3d 0%, var(--bg) 60%);
+      color:var(--text); font-family:var(--font);
+      display:flex; align-items:stretch; justify-content:center;
+    }
+
+    .app{
+      width:min(960px, 100%);
+      height:100%;
+      display:flex;
+      padding:16px;
+      gap:16px;
+    }
+
+    /* Left panel (optional) */
+    .side{
+      width:280px;
+      background: rgba(23,33,43,.9);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    @media (max-width: 860px){
+      .side{ display:none; }
+      .app{ padding:10px; }
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      padding:8px 10px;
+    }
+    .logo{
+      width:38px; height:38px; border-radius:14px;
+      background: linear-gradient(145deg, var(--accent), #55b2ff);
+      display:grid; place-items:center;
+      font-weight:800;
+      box-shadow: 0 10px 20px rgba(43,124,255,.25);
+    }
+    .brand h1{
+      margin:0; font-size:16px; letter-spacing:.2px;
+    }
+    .brand p{
+      margin:2px 0 0; font-size:12px; color:var(--muted);
+    }
+
+    .card{
+      background: rgba(31,44,58,.7);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius: var(--radius2);
+      padding:12px;
+    }
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .chip{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      color:var(--muted); font-size:12px;
+      background: rgba(255,255,255,.03);
+    }
+    .dot{
+      width:8px; height:8px; border-radius:50%;
+      background: var(--danger);
+      box-shadow: 0 0 0 3px rgba(255,93,93,.15);
+    }
+    .dot.ok{ background: var(--ok); box-shadow:0 0 0 3px rgba(34,197,94,.15); }
+    .dot.mid{ background: #f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,.15); }
+
+    .label{ font-size:12px; color:var(--muted); margin-bottom:6px; }
+    .input{
+      width:100%;
+      padding:10px 12px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(14,22,33,.55);
+      color:var(--text);
+      outline:none;
+    }
+    .input:focus{ border-color: rgba(43,124,255,.65); box-shadow:0 0 0 3px rgba(43,124,255,.15); }
+    .muted{ color:var(--muted); font-size:12px; line-height:1.35; }
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      gap:8px;
+      padding:10px 12px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      color:var(--text);
+      cursor:pointer;
+      user-select:none;
+    }
+    .btn:hover{ background: rgba(255,255,255,.08); }
+    .btn.primary{
+      background: linear-gradient(145deg, rgba(43,124,255,.95), rgba(85,178,255,.95));
+      border-color: transparent;
+      box-shadow: 0 12px 24px rgba(43,124,255,.22);
+    }
+    .btn.primary:hover{ filter: brightness(1.03); }
+    .btn:disabled{ opacity:.5; cursor:not-allowed; }
+    .btn.danger{ background: rgba(255,93,93,.10); border-color: rgba(255,93,93,.35); }
+    .btn.danger:hover{ background: rgba(255,93,93,.16); }
+
+    /* Main chat panel */
+    .main{
+      flex:1;
+      background: rgba(23,33,43,.9);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display:flex; flex-direction:column;
+      overflow:hidden;
+    }
+    .topbar{
+      padding:12px 14px;
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
+      background: rgba(31,44,58,.8);
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .title{
+      display:flex; flex-direction:column;
+      min-width:0;
+    }
+    .title strong{ font-size:14px; }
+    .title span{ font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:58vw; }
+    .actions{ display:flex; gap:8px; align-items:center; }
+
+    .chat{
+      flex:1;
+      padding:14px;
+      overflow:auto;
+      background:
+              radial-gradient(900px 540px at 80% 0%, rgba(43,124,255,.12), transparent 60%),
+              radial-gradient(700px 520px at 10% 40%, rgba(85,178,255,.10), transparent 60%);
+    }
+    .bubble{
+      max-width: min(560px, 86%);
+      padding:10px 12px;
+      border-radius: 16px;
+      line-height:1.35;
+      white-space:pre-wrap;
+      word-break:break-word;
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(14,22,33,.55);
+      margin:8px 0;
+      box-shadow: 0 10px 18px rgba(0,0,0,.18);
+    }
+    .bubble.me{
+      margin-left:auto;
+      background: linear-gradient(145deg, rgba(43,124,255,.85), rgba(85,178,255,.75));
+      border-color: transparent;
+    }
+    .meta{
+      margin-top:6px;
+      font-size:11px;
+      color: rgba(230,237,243,.85);
+      opacity:.85;
+      display:flex; gap:8px; align-items:center;
+    }
+    .meta .who{ font-weight:700; }
+    .meta .time{ opacity:.85; font-weight:500; }
+
+    .sys{
+      text-align:center;
+      color:var(--muted);
+      font-size:12px;
+      padding:10px 0;
+    }
+
+    .composer{
+      padding:12px;
+      background: rgba(31,44,58,.82);
+      border-top:1px solid rgba(255,255,255,.06);
+      display:flex; gap:10px; align-items:flex-end;
+    }
+    .textbox{
+      flex:1;
+      background: rgba(14,22,33,.55);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: 16px;
+      padding:10px 12px;
+      color:var(--text);
+      outline:none;
+      min-height:42px;
+      max-height:140px;
+      resize:none;
+      font: inherit;
+      line-height:1.35;
+    }
+    .textbox:focus{ border-color: rgba(43,124,255,.65); box-shadow:0 0 0 3px rgba(43,124,255,.15); }
+    .hint{ font-size:11px; color:var(--muted); padding:0 2px; }
   </style>
 </head>
 
 <body>
-<h1>WebSocket Chat Client 💬</h1>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <div class="logo">MN</div>
+      <div>
+        <h1>MiniNetTalk</h1>
+        <p>Telegram-ish WebSocket Chat</p>
+      </div>
+    </div>
 
-<p class="muted">
-  说明：本页面会自动连接你的服务器（不需要手填 URI）。<br>
-  - 若页面通过 <span class="tag">http://host:port</span> 打开，将自动连接 <span class="tag">ws://host:port</span><br>
-  - 若通过 <span class="tag">file://</span> 打开，将默认连接 <span class="tag">ws://localhost:49999</span>
-</p>
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <span class="chip"><span class="dot" id="dot"></span><span id="status">DISCONNECTED</span></span>
+        <button class="btn danger" id="reconnectBtn" title="手动重连">重连</button>
+      </div>
+      <div class="muted" style="margin-top:8px">
+        <div>WS: <span id="endpoint">（推导中…）</span></div>
+        <div style="margin-top:6px">提示：页面用 <b>http://</b> 打开会自动连接同源；<br>file:// 打开默认连接 localhost。</div>
+      </div>
+    </div>
 
-<div class="row">
-  <span class="tag" id="status">DISCONNECTED</span>
-  <span class="muted" id="endpoint"></span>
-</div>
+    <div class="card">
+      <div class="label">你的昵称（可选）</div>
+      <input class="input" id="userName" maxlength="24" placeholder="yuqi / 张三 / Alice" />
+      <div class="muted" style="margin-top:8px">昵称仅拼接在消息文本前，不做身份认证（开发调试用途）。</div>
+    </div>
 
-<!-- 高级选项：一般不需要 -->
-<details style="margin: 8px 0;">
-  <summary>高级选项（一般不用点开）</summary>
-  <div class="row">
-    WebSocket 路径：
-    <input id="path" size="10" value="/ws">
-    覆盖 WS 地址（留空=自动推导）：
-    <input id="override" size="42" placeholder="例如 ws://192.168.1.10:49999/ws">
-  </div>
-</details>
+    <details class="card">
+      <summary style="cursor:pointer; color:var(--muted)">高级选项（一般不用）</summary>
+      <div style="height:10px"></div>
+      <div class="label">WebSocket 路径</div>
+      <input class="input" id="path" value="/ws" />
+      <div style="height:10px"></div>
+      <div class="label">覆盖 WS 地址（留空=自动推导）</div>
+      <input class="input" id="override" placeholder="例如 ws://chat.yanyuqi.top:49999/ws" />
+      <div class="muted" style="margin-top:8px">安全：仅允许 ws://（你说后端不支持 https/wss）。</div>
+    </details>
 
-<div class="row">
-  <button id="connect">Connect</button>
-  <button id="disconnect" disabled>Disconnect</button>
-</div>
+    <div class="card">
+      <div class="muted">
+        <b>安全措施</b><br>
+        - 仅允许 <span class="chip">ws://</span>（拒绝 wss/其他协议）<br>
+        - 输入长度限制（昵称/消息）<br>
+        - 自动重连（指数退避 + 抖动）<br>
+        - 过滤控制字符，避免刷屏/注入<br>
+        - IME 友好：中文选词回车不会误发送<br>
+        - 客户端去重：避免“本地回显 + 服务器广播”显示两遍
+      </div>
+    </div>
+  </aside>
 
-<div class="row">
-  Your Name:
-  <input id="userName" size="24" placeholder="yuqi（可选）">
-</div>
+  <main class="main">
+    <div class="topbar">
+      <div class="title">
+        <strong>MiniNetTalk 💬</strong>
+        <span id="topHint">自动连接中…</span>
+      </div>
+      <div class="actions">
+        <span class="chip"><span class="dot" id="dot2"></span><span id="status2">DISCONNECTED</span></span>
+      </div>
+    </div>
 
-<pre id="messages"></pre>
+    <div class="chat" id="chat"></div>
 
-<div style="margin-top: 8px;">
-  Message<br>
-  <div class="row">
-    <input id="sendMessage" size="60" value="" placeholder="输入消息，回车发送">
-    <button id="send" disabled>Send</button>
-  </div>
+    <div class="composer">
+      <div style="flex:1; display:flex; flex-direction:column; gap:6px">
+        <textarea class="textbox" id="msg" placeholder="输入消息…（Enter 发送，Shift+Enter 换行）" maxlength="2000"></textarea>
+        <div class="hint" id="hint">未连接：将自动重连…</div>
+      </div>
+      <button class="btn primary" id="sendBtn" disabled>发送</button>
+    </div>
+  </main>
 </div>
 
 <script>
+  // -----------------------------
+  // Config / Security limits
+  // -----------------------------
+  const LIMITS = {
+    nameMax: 24,
+    msgMax: 2000,
+    // 防止过快发送导致刷屏（客户端侧节流）
+    minSendIntervalMs: 120
+  };
+
+  // 客户端唯一标识：用于“回显去重”
+  const CLIENT_ID = (crypto.randomUUID ? crypto.randomUUID() : (Date.now() + "-" + Math.random()));
+
+  // 用零宽字符+标签把 cid 藏在消息末尾（不影响肉眼显示）
+  const ZW = "\u200B"; // Zero-width space
+  function tagOutgoing(text) {
+    return text + ZW + `[cid:${CLIENT_ID}]`;
+  }
+  function stripCid(text) {
+    const m = text.match(/\u200B\[cid:([^\]]+)\]$/);
+    if (!m) return { clean: text, cid: null };
+    return { clean: text.slice(0, text.length - m[0].length), cid: m[1] };
+  }
+
   let ws = null;
+  let reconnectTimer = null;
+  let reconnectAttempt = 0;
+  let lastSendAt = 0;
 
-  const statusEl = document.getElementById("status");
-  const endpointEl = document.getElementById("endpoint");
-  const messagesEl = document.getElementById("messages");
-
-  const connectBtn = document.getElementById("connect");
-  const disconnectBtn = document.getElementById("disconnect");
-  const sendBtn = document.getElementById("send");
-
-  const userNameEl = document.getElementById("userName");
-  const sendMessageEl = document.getElementById("sendMessage");
-
+  const chatEl = document.getElementById("chat");
+  const msgEl = document.getElementById("msg");
+  const nameEl = document.getElementById("userName");
   const pathEl = document.getElementById("path");
   const overrideEl = document.getElementById("override");
+  const sendBtn = document.getElementById("sendBtn");
+  const reconnectBtn = document.getElementById("reconnectBtn");
 
-  function showMessage(msg) {
-    messagesEl.textContent += msg + "\n";
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+  const statusEl = document.getElementById("status");
+  const statusEl2 = document.getElementById("status2");
+  const dotEl = document.getElementById("dot");
+  const dotEl2 = document.getElementById("dot2");
+  const endpointEl = document.getElementById("endpoint");
+  const topHintEl = document.getElementById("topHint");
+  const hintEl = document.getElementById("hint");
+
+  // -----------------------------
+  // Helpers
+  // -----------------------------
+  function nowTime() {
+    const d = new Date();
+    return d.toLocaleTimeString([], {hour: "2-digit", minute:"2-digit"});
   }
 
-  function setStatus(text, ok) {
-    statusEl.textContent = text;
-    statusEl.style.color = ok ? "#16a34a" : "#dc2626";
-    statusEl.style.borderColor = ok ? "#16a34a" : "#dc2626";
+  // 过滤控制字符（保留 \n \t）
+  function sanitizeText(s) {
+    s = (s ?? "").toString();
+    // 去掉除 \n \t 以外的控制字符
+    s = s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "");
+    return s;
   }
 
+  function addSystem(text) {
+    const div = document.createElement("div");
+    div.className = "sys";
+    div.textContent = text;
+    chatEl.appendChild(div);
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
+
+  function addBubble(text, who = "", isMe = false) {
+    const b = document.createElement("div");
+    b.className = "bubble" + (isMe ? " me" : "");
+    b.textContent = text;
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    const whoEl = document.createElement("span");
+    whoEl.className = "who";
+    whoEl.textContent = who || (isMe ? "Me" : "Peer");
+    const timeEl = document.createElement("span");
+    timeEl.className = "time";
+    timeEl.textContent = nowTime();
+    meta.appendChild(whoEl);
+    meta.appendChild(timeEl);
+
+    b.appendChild(meta);
+    chatEl.appendChild(b);
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
+
+  function setStatus(state) {
+    // state: "DISCONNECTED" | "CONNECTING" | "CONNECTED"
+    statusEl.textContent = state;
+    statusEl2.textContent = state;
+
+    const dotClass = state === "CONNECTED" ? "ok" : (state === "CONNECTING" ? "mid" : "");
+    dotEl.className = "dot" + (dotClass ? " " + dotClass : "");
+    dotEl2.className = "dot" + (dotClass ? " " + dotClass : "");
+
+    sendBtn.disabled = state !== "CONNECTED";
+    msgEl.disabled = state !== "CONNECTED";
+
+    if (state === "CONNECTED") {
+      topHintEl.textContent = "已连接，开始聊天吧～";
+      hintEl.textContent = "Enter 发送｜Shift+Enter 换行";
+    } else if (state === "CONNECTING") {
+      topHintEl.textContent = "连接中…";
+      hintEl.textContent = "正在连接…";
+    } else {
+      topHintEl.textContent = "未连接：将自动重连";
+      hintEl.textContent = "未连接：将自动重连…";
+    }
+  }
+
+  // 同源推导 ws 地址：http -> ws；你说不支持 https/wss，所以只允许 ws
   function buildWsUrl() {
     const override = overrideEl.value.trim();
-    if (override) return override;
-
     const WS_PATH = (pathEl.value.trim() || "/ws");
 
-    // 只支持 http / ws（你说服务器不支持 https）
-    // 若是 file:// 打开，则 location.host 为空，fallback 到 localhost:49999
-    const host = location.host && location.protocol.startsWith("http")
-            ? location.host
-            : "localhost:49999";
+    let urlStr;
+    if (override) {
+      urlStr = override;
+    } else {
+      // file:// 打开时 location.host 为空，fallback 到 localhost:49999
+      const host = (location.host && location.protocol.startsWith("http"))
+              ? location.host
+              : "localhost:49999";
+      urlStr = `ws://${host}${WS_PATH.startsWith("/") ? WS_PATH : ("/" + WS_PATH)}`;
+    }
 
-    return `ws://${host}${WS_PATH}`;
+    // 安全：只允许 ws://
+    if (!/^ws:\/\//i.test(urlStr)) {
+      throw new Error("只允许 ws://（后端不支持 wss/https）");
+    }
+
+    // 使用 URL 解析，能正确处理 IPv6 方括号等
+    const u = new URL(urlStr);
+
+    // 限制 path 必须以 / 开头（防止奇怪拼接）
+    if (!u.pathname.startsWith("/")) u.pathname = "/" + u.pathname;
+
+    return u.toString();
   }
 
-  function enableUi(connected) {
-    connectBtn.disabled = connected;
-    disconnectBtn.disabled = !connected;
-    sendBtn.disabled = !connected;
-    sendMessageEl.disabled = !connected;
+  function clearReconnectTimer() {
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
   }
 
-  connectBtn.onclick = function() {
-    const url = buildWsUrl();
-    endpointEl.textContent = `WS: ${url}`;
+  function scheduleReconnect(reason = "") {
+    clearReconnectTimer();
+    reconnectAttempt++;
+
+    // 指数退避 + 抖动（上限 12s）
+    const base = Math.min(12000, 400 * Math.pow(1.6, reconnectAttempt - 1));
+    const jitter = Math.random() * 220;
+    const delay = Math.round(base + jitter);
+
+    addSystem(`连接断开${reason ? "（" + reason + "）" : ""}，${delay}ms 后自动重连…`);
+    setStatus("DISCONNECTED");
+
+    reconnectTimer = setTimeout(() => {
+      connect();
+    }, delay);
+  }
+
+  // -----------------------------
+  // WebSocket lifecycle
+  // -----------------------------
+  function connect() {
+    clearReconnectTimer();
+    let url;
+    try {
+      url = buildWsUrl();
+    } catch (e) {
+      endpointEl.textContent = "（WS URL 无效）";
+      addSystem("WS URL 构造失败：" + e.message);
+      setStatus("DISCONNECTED");
+      return;
+    }
+
+    endpointEl.textContent = url;
+    setStatus("CONNECTING");
 
     try {
       ws = new WebSocket(url);
     } catch (e) {
-      setStatus("DISCONNECTED", false);
-      enableUi(false);
-      showMessage("[error] WebSocket 创建失败: " + e);
+      addSystem("WebSocket 创建失败：" + e.message);
+      ws = null;
+      scheduleReconnect("创建失败");
       return;
     }
 
-    setStatus("CONNECTING", false);
-    enableUi(false);
-
-    ws.onopen = function() {
-      setStatus("CONNECTED", true);
-      enableUi(true);
-      showMessage("[connection opened]");
-      sendMessageEl.focus();
+    ws.onopen = () => {
+      reconnectAttempt = 0;
+      addSystem("✅ 已连接");
+      setStatus("CONNECTED");
+      msgEl.focus();
     };
 
-    ws.onclose = function(ev) {
-      setStatus("DISCONNECTED", false);
-      enableUi(false);
-      showMessage(`[connection closed] code=${ev.code} reason=${ev.reason || "(none)"}`);
+    ws.onmessage = (ev) => {
+      // 安全：强制转字符串 + 清理控制字符 + 限制长度
+      let text = sanitizeText(String(ev.data ?? ""));
+      if (text.length > 8000) text = text.slice(0, 8000) + "…";
+
+      // 简单解析 "name: message"
+      const idx = text.indexOf(": ");
+      if (idx > 0 && idx < 60) {
+        const who = sanitizeText(text.slice(0, idx)).slice(0, LIMITS.nameMax);
+        const bodyRaw = text.slice(idx + 2);
+
+        // 去重：如果是自己的 cid 回显，就忽略（因为本地已经显示过了）
+        const { clean, cid } = stripCid(bodyRaw);
+        if (cid && cid === CLIENT_ID) return;
+
+        addBubble(clean, who, false);
+      } else {
+        // 非标准格式，也照样显示
+        const { clean, cid } = stripCid(text);
+        if (cid && cid === CLIENT_ID) return;
+        addBubble(clean, "Server", false);
+      }
+    };
+
+    ws.onerror = () => {
+      addSystem("⚠️ 连接发生错误（浏览器未提供详情）");
+    };
+
+    ws.onclose = (ev) => {
+      const reason = ev.reason ? ev.reason : "(none)";
+      const why = `code=${ev.code} reason=${reason}`;
       ws = null;
+      scheduleReconnect(why);
     };
+  }
 
-    ws.onmessage = function(ev) {
-      showMessage(ev.data);
-    };
+  function disconnect() {
+    clearReconnectTimer();
+    if (ws) {
+      try { ws.close(1000, "client closing"); } catch (_) {}
+      ws = null;
+    }
+    reconnectAttempt = 0;
+    addSystem("已断开（手动）");
+    setStatus("DISCONNECTED");
+  }
 
-    ws.onerror = function(ev) {
-      showMessage("[error]");
-      console.log(ev);
-    };
-  };
-
-  disconnectBtn.onclick = function() {
-    if (ws) ws.close(1000, "client closing");
-  };
-
-  sendBtn.onclick = function() {
+  // -----------------------------
+  // Sending
+  // -----------------------------
+  function sendCurrent() {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
-    const name = userNameEl.value.trim() || "yuqi";
-    const msg = sendMessageEl.value;
+    const now = Date.now();
+    if (now - lastSendAt < LIMITS.minSendIntervalMs) {
+      addSystem("发送太快啦～稍等一下 😵‍💫");
+      return;
+    }
+    lastSendAt = now;
 
-    // 保持和你原版一致：发送纯文本 "name: message"
-    ws.send(name + ": " + msg);
-    sendMessageEl.value = "";
-    sendMessageEl.focus();
-  };
+    const name = sanitizeText(nameEl.value.trim()).slice(0, LIMITS.nameMax) || "yuqi";
+    let msg = sanitizeText(msgEl.value);
 
-  sendMessageEl.onkeyup = function(ev) {
-    ev.preventDefault();
-    if (ev.key === "Enter") sendBtn.click();
-  };
+    msg = msg.trimEnd();
+    if (!msg.trim()) return;
 
-  // 初始状态
-  setStatus("DISCONNECTED", false);
-  enableUi(false);
-  endpointEl.textContent = "（将自动推导 WS 地址，无需手填）";
+    if (msg.length > LIMITS.msgMax) msg = msg.slice(0, LIMITS.msgMax);
+
+    // 发送：在消息末尾附加 cid（用于去重）
+    ws.send(`${name}: ${tagOutgoing(msg)}`);
+
+    // 本地先显示一份（体验更像聊天软件）
+    addBubble(msg, name, true);
+
+    msgEl.value = "";
+    msgEl.focus();
+  }
+
+  // IME 友好：中文选词时 Enter 不发送
+  msgEl.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter" && !ev.shiftKey) {
+      if (ev.isComposing) return;
+      ev.preventDefault();
+      sendCurrent();
+    }
+  });
+
+  sendBtn.addEventListener("click", sendCurrent);
+
+  reconnectBtn.addEventListener("click", () => {
+    addSystem("🔁 手动重连…");
+    disconnect();
+    connect();
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      if (!ws || ws.readyState === WebSocket.CLOSED) {
+        connect();
+      }
+    }
+  });
+
+  // 初始化
+  setStatus("DISCONNECTED");
+  addSystem("欢迎使用 MiniNetTalk 👋 正在自动连接…");
+  connect();
 </script>
 </body>
 </html>
