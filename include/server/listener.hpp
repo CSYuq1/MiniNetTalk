@@ -21,16 +21,8 @@ namespace minitalk {
             std::shared_ptr<shared_state> state_;
 
         private:
-            enum class listener_error_type {
-                open,
-                bind,
-                set_option,
-                listen,
-                accept
 
-            };
-
-            int fail(error_code ec, std::string erro_msg);
+            void fail(error_code ec, std::string erro_msg);
             void keep_accept(error_code ec, tcp::socket);
 
         public:
