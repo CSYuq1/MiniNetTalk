@@ -39,7 +39,7 @@ namespace minitalk::server {
 
     void websocket_session::on_read(error_code ec, [[maybe_unused]] std::size_t bytes_transferred) {
         if (ec) [[unlikely]]{
-            fail(ec, "read");
+            return fail(ec, "read");
         }
 
         auto msg = beast::buffers_to_string(buffer_.data());
@@ -67,6 +67,11 @@ namespace minitalk::server {
     }
 
     void websocket_session::on_send(std::shared_ptr<std::string const> const& msg) {
+
+        if (queue_.size() >= 1024) {
+            // 丢弃/断开都行，至少别无限堆积
+            return;
+        }
 
         queue_.push_back(msg);
 

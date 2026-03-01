@@ -2,8 +2,9 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>MiniNetTalk</title>
+  <meta name="color-scheme" content="dark light" />
   <style>
     :root{
       --bg:#0e1621;
@@ -12,596 +13,728 @@
       --text:#e6edf3;
       --muted:#9fb0c0;
       --accent:#2b7cff;
+      --accent2:#4aa3ff;
       --danger:#ff5d5d;
       --ok:#22c55e;
       --shadow: 0 10px 30px rgba(0,0,0,.35);
       --radius: 18px;
       --radius2: 14px;
       --gap: 12px;
-      --font: system-ui, -apple-system, Segoe UI, Roboto, "PingFang SC","Microsoft YaHei", Arial, sans-serif;
+      --font: system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans CJK SC", "PingFang SC", "Microsoft YaHei", sans-serif;
     }
-    *{ box-sizing:border-box; }
-    html,body{ height:100%; }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
     body{
-      margin:0; background: radial-gradient(1200px 700px at 20% 10%, #1b2a3d 0%, var(--bg) 60%);
-      color:var(--text); font-family:var(--font);
-      display:flex; align-items:stretch; justify-content:center;
+      margin:0;
+      font-family: var(--font);
+      background: radial-gradient(1200px 800px at 20% -10%, rgba(43,124,255,.25), transparent 55%),
+      radial-gradient(1200px 800px at 110% 10%, rgba(74,163,255,.18), transparent 60%),
+      var(--bg);
+      color: var(--text);
+      display:flex;
+      justify-content:center;
+      padding: 18px;
     }
 
     .app{
-      width:min(960px, 100%);
-      height:100%;
-      display:flex;
-      padding:16px;
-      gap:16px;
+      width: min(980px, 100%);
+      height: min(860px, 100%);
+      display:grid;
+      grid-template-rows: auto 1fr auto;
+      gap: var(--gap);
     }
 
-    /* Left panel (optional) */
-    .side{
-      width:280px;
-      background: rgba(23,33,43,.9);
-      border:1px solid rgba(255,255,255,.06);
-      border-radius: var(--radius);
+    /* Top bar */
+    .topbar{
+      background: color-mix(in srgb, var(--panel) 92%, transparent);
+      border: 1px solid rgba(255,255,255,.06);
       box-shadow: var(--shadow);
-      padding:14px;
+      border-radius: var(--radius);
+      padding: 14px 14px;
       display:flex;
-      flex-direction:column;
-      gap:12px;
-    }
-    @media (max-width: 860px){
-      .side{ display:none; }
-      .app{ padding:10px; }
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
     }
     .brand{
-      display:flex; align-items:center; gap:10px;
-      padding:8px 10px;
+      display:flex; align-items:center; gap:12px;
+      min-width: 0;
     }
     .logo{
-      width:38px; height:38px; border-radius:14px;
-      background: linear-gradient(145deg, var(--accent), #55b2ff);
+      width: 42px; height: 42px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(43,124,255,1), rgba(74,163,255,1));
       display:grid; place-items:center;
-      font-weight:800;
-      box-shadow: 0 10px 20px rgba(43,124,255,.25);
+      box-shadow: 0 8px 18px rgba(43,124,255,.25);
+      flex: 0 0 auto;
     }
-    .brand h1{
-      margin:0; font-size:16px; letter-spacing:.2px;
+    .logo svg{ width: 22px; height: 22px; opacity:.95; }
+    .titlewrap{ min-width:0; }
+    .title{
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: .2px;
+      margin:0;
+      line-height: 1.15;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
     }
-    .brand p{
-      margin:2px 0 0; font-size:12px; color:var(--muted);
-    }
-
-    .card{
-      background: rgba(31,44,58,.7);
-      border:1px solid rgba(255,255,255,.06);
-      border-radius: var(--radius2);
-      padding:12px;
-    }
-    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .chip{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:6px 10px; border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      color:var(--muted); font-size:12px;
-      background: rgba(255,255,255,.03);
+    .subtitle{
+      margin: 4px 0 0 0;
+      font-size: 12px;
+      color: var(--muted);
+      display:flex; align-items:center; gap:8px;
+      flex-wrap: wrap;
     }
     .dot{
-      width:8px; height:8px; border-radius:50%;
+      width:8px; height:8px; border-radius:99px; display:inline-block;
       background: var(--danger);
-      box-shadow: 0 0 0 3px rgba(255,93,93,.15);
+      box-shadow: 0 0 0 4px rgba(255,93,93,.12);
     }
-    .dot.ok{ background: var(--ok); box-shadow:0 0 0 3px rgba(34,197,94,.15); }
-    .dot.mid{ background: #f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,.15); }
-
-    .label{ font-size:12px; color:var(--muted); margin-bottom:6px; }
-    .input{
-      width:100%;
-      padding:10px 12px;
-      border-radius: 12px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(14,22,33,.55);
-      color:var(--text);
-      outline:none;
+    .dot.ok{
+      background: var(--ok);
+      box-shadow: 0 0 0 4px rgba(34,197,94,.12);
     }
-    .input:focus{ border-color: rgba(43,124,255,.65); box-shadow:0 0 0 3px rgba(43,124,255,.15); }
-    .muted{ color:var(--muted); font-size:12px; line-height:1.35; }
-    .btn{
-      display:inline-flex; align-items:center; justify-content:center;
-      gap:8px;
-      padding:10px 12px;
-      border-radius: 12px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.05);
-      color:var(--text);
-      cursor:pointer;
+    .pill{
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      color: var(--text);
+      display:flex; align-items:center; gap:8px;
       user-select:none;
     }
-    .btn:hover{ background: rgba(255,255,255,.08); }
+    .pill strong{ font-weight: 700; }
+    .btn{
+      appearance:none;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 10px 12px;
+      font-weight: 650;
+      cursor: pointer;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease, opacity .12s ease;
+      display:inline-flex; align-items:center; gap:8px;
+      white-space: nowrap;
+    }
+    .btn:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.16); background: rgba(255,255,255,.08); }
+    .btn:active{ transform: translateY(0px) scale(.99); }
     .btn.primary{
-      background: linear-gradient(145deg, rgba(43,124,255,.95), rgba(85,178,255,.95));
-      border-color: transparent;
-      box-shadow: 0 12px 24px rgba(43,124,255,.22);
+      background: linear-gradient(135deg, rgba(43,124,255,.95), rgba(74,163,255,.92));
+      border-color: rgba(43,124,255,.45);
+      box-shadow: 0 10px 22px rgba(43,124,255,.22);
     }
-    .btn.primary:hover{ filter: brightness(1.03); }
-    .btn:disabled{ opacity:.5; cursor:not-allowed; }
-    .btn.danger{ background: rgba(255,93,93,.10); border-color: rgba(255,93,93,.35); }
-    .btn.danger:hover{ background: rgba(255,93,93,.16); }
+    .btn.danger{
+      background: rgba(255,93,93,.10);
+      border-color: rgba(255,93,93,.30);
+      color: #ffd7d7;
+    }
+    .btn[disabled]{ opacity:.55; cursor:not-allowed; transform:none; }
 
-    /* Main chat panel */
+    /* Main chat */
     .main{
-      flex:1;
-      background: rgba(23,33,43,.9);
-      border:1px solid rgba(255,255,255,.06);
-      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--panel) 90%, transparent);
+      border: 1px solid rgba(255,255,255,.06);
       box-shadow: var(--shadow);
-      display:flex; flex-direction:column;
+      border-radius: var(--radius);
       overflow:hidden;
+      display:grid;
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+      min-height: 0;
     }
-    .topbar{
-      padding:12px 14px;
-      display:flex; align-items:center; justify-content:space-between;
-      gap:10px;
-      background: rgba(31,44,58,.8);
-      border-bottom:1px solid rgba(255,255,255,.06);
-    }
-    .title{
-      display:flex; flex-direction:column;
-      min-width:0;
-    }
-    .title strong{ font-size:14px; }
-    .title span{ font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:58vw; }
-    .actions{ display:flex; gap:8px; align-items:center; }
 
-    .chat{
-      flex:1;
-      padding:14px;
+    .chatHeader{
+      padding: 12px 14px;
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      justify-content:space-between;
+      background: rgba(0,0,0,.14);
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+
+    .nameBox{
+      display:flex; gap:10px; align-items:center;
+      min-width: 0;
+      width: 100%;
+    }
+    .input{
+      width: 100%;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      outline:none;
+      transition: border-color .12s ease, background .12s ease;
+      min-width: 0;
+    }
+    .input:focus{
+      border-color: rgba(74,163,255,.55);
+      background: rgba(255,255,255,.08);
+    }
+
+    .messages{
+      padding: 14px;
       overflow:auto;
+      min-height: 0;
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
       background:
-              radial-gradient(900px 540px at 80% 0%, rgba(43,124,255,.12), transparent 60%),
-              radial-gradient(700px 520px at 10% 40%, rgba(85,178,255,.10), transparent 60%);
+              radial-gradient(900px 500px at 20% 0%, rgba(43,124,255,.06), transparent 60%),
+              radial-gradient(900px 500px at 90% 10%, rgba(74,163,255,.05), transparent 65%),
+              rgba(0,0,0,.08);
     }
+
+    .row{
+      display:flex;
+      align-items:flex-end;
+      gap: 10px;
+    }
+    .row.me{ justify-content:flex-end; }
     .bubble{
-      max-width: min(560px, 86%);
-      padding:10px 12px;
-      border-radius: 16px;
-      line-height:1.35;
-      white-space:pre-wrap;
-      word-break:break-word;
-      border:1px solid rgba(255,255,255,.08);
-      background: rgba(14,22,33,.55);
-      margin:8px 0;
-      box-shadow: 0 10px 18px rgba(0,0,0,.18);
+      max-width: min(78%, 720px);
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 18px;
+      padding: 10px 12px;
+      line-height: 1.35;
+      word-wrap: break-word;
+      white-space: pre-wrap;
     }
-    .bubble.me{
-      margin-left:auto;
-      background: linear-gradient(145deg, rgba(43,124,255,.85), rgba(85,178,255,.75));
-      border-color: transparent;
+    .row.me .bubble{
+      background: linear-gradient(135deg, rgba(43,124,255,.36), rgba(74,163,255,.26));
+      border-color: rgba(74,163,255,.30);
     }
     .meta{
-      margin-top:6px;
-      font-size:11px;
-      color: rgba(230,237,243,.85);
-      opacity:.85;
-      display:flex; gap:8px; align-items:center;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--muted);
+      display:flex;
+      gap: 8px;
+      align-items:center;
+      justify-content: space-between;
     }
-    .meta .who{ font-weight:700; }
-    .meta .time{ opacity:.85; font-weight:500; }
+    .sender{
+      font-weight: 700;
+      color: color-mix(in srgb, var(--text) 86%, var(--muted));
+    }
+    .time{ opacity:.9; }
 
-    .sys{
-      text-align:center;
-      color:var(--muted);
-      font-size:12px;
-      padding:10px 0;
+    .system{
+      font-size: 12px;
+      color: var(--muted);
+      background: rgba(255,255,255,.05);
+      border: 1px dashed rgba(255,255,255,.12);
+      border-radius: 14px;
+      padding: 10px 12px;
+      align-self: center;
+      max-width: 92%;
+      white-space: pre-wrap;
     }
 
+    /* Composer */
     .composer{
-      padding:12px;
-      background: rgba(31,44,58,.82);
-      border-top:1px solid rgba(255,255,255,.06);
-      display:flex; gap:10px; align-items:flex-end;
+      background: color-mix(in srgb, var(--panel) 92%, transparent);
+      border: 1px solid rgba(255,255,255,.06);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      padding: 12px;
+      display:flex;
+      gap: 10px;
+      align-items:center;
     }
-    .textbox{
-      flex:1;
-      background: rgba(14,22,33,.55);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius: 16px;
-      padding:10px 12px;
-      color:var(--text);
-      outline:none;
-      min-height:42px;
-      max-height:140px;
-      resize:none;
-      font: inherit;
-      line-height:1.35;
+    .composer .input{
+      border-radius: 999px;
+      padding: 12px 14px;
     }
-    .textbox:focus{ border-color: rgba(43,124,255,.65); box-shadow:0 0 0 3px rgba(43,124,255,.15); }
-    .hint{ font-size:11px; color:var(--muted); padding:0 2px; }
+    .sendBtn{
+      flex: 0 0 auto;
+      min-width: 110px;
+      justify-content:center;
+    }
+
+    @media (max-width: 520px){
+      body{ padding: 10px; }
+      .logo{ width: 40px; height: 40px; }
+      .btn{ padding: 10px 10px; }
+      .sendBtn{ min-width: 92px; }
+      .bubble{ max-width: 86%; }
+    }
   </style>
 </head>
 
 <body>
 <div class="app">
-  <aside class="side">
+  <div class="topbar">
     <div class="brand">
-      <div class="logo">MN</div>
-      <div>
-        <h1>MiniNetTalk</h1>
-        <p>Telegram-ish WebSocket Chat</p>
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M21 3L3.7 10.2c-.9.4-.86 1.7.06 2l4.8 1.6 1.8 5.3c.3.9 1.5 1 2 .2l2.8-4 4.9 3.6c.8.6 1.9.1 2.1-.9L22 4.1c.2-.9-.7-1.6-1.6-1.1z" fill="rgba(255,255,255,.92)"/>
+        </svg>
+      </div>
+      <div class="titlewrap">
+        <p class="title">MiniNetTalk</p>
+        <p class="subtitle">
+          <span id="statusDot" class="dot" aria-hidden="true"></span>
+          <span id="statusText">未连接</span>
+          <span class="pill" title="当前使用的 WebSocket 地址（自动计算）">
+              <strong>WS</strong>
+              <span id="wsUrlText" style="opacity:.9"></span>
+            </span>
+        </p>
       </div>
     </div>
 
-    <div class="card">
-      <div class="row" style="justify-content:space-between">
-        <span class="chip"><span class="dot" id="dot"></span><span id="status">DISCONNECTED</span></span>
-        <button class="btn danger" id="reconnectBtn" title="手动重连">重连</button>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <button id="btnReconnect" class="btn primary" type="button">重连</button>
+      <button id="btnDisconnect" class="btn danger" type="button">断开</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="chatHeader">
+      <div class="nameBox">
+        <input id="userName" class="input" maxlength="32" placeholder="你的昵称（可不填，默认为 null）" />
       </div>
-      <div class="muted" style="margin-top:8px">
-        <div>WS: <span id="endpoint">（推导中…）</span></div>
-        <div style="margin-top:6px">提示：页面用 <b>http://</b> 打开会自动连接同源；<br>file:// 打开默认连接 localhost。</div>
+      <div class="pill" title="你的客户端实例 ID（用于避免回环）">
+        <strong>ID</strong>
+        <span id="clientIdText" style="opacity:.9"></span>
       </div>
     </div>
 
-    <div class="card">
-      <div class="label">你的昵称（可选）</div>
-      <input class="input" id="userName" maxlength="24" placeholder="yuqi / 张三 / Alice" />
-      <div class="muted" style="margin-top:8px">昵称仅拼接在消息文本前，不做身份认证（开发调试用途）。</div>
-    </div>
+    <div id="messages" class="messages" aria-live="polite" aria-label="聊天消息区域"></div>
+  </div>
 
-    <details class="card">
-      <summary style="cursor:pointer; color:var(--muted)">高级选项（一般不用）</summary>
-      <div style="height:10px"></div>
-      <div class="label">WebSocket 路径</div>
-      <input class="input" id="path" value="/ws" />
-      <div style="height:10px"></div>
-      <div class="label">覆盖 WS 地址（留空=自动推导）</div>
-      <input class="input" id="override" placeholder="例如 ws://chat.yanyuqi.top:49999/ws" />
-      <div class="muted" style="margin-top:8px">安全：仅允许 ws://（你说后端不支持 https/wss）。</div>
-    </details>
-
-    <div class="card">
-      <div class="muted">
-        <b>安全措施</b><br>
-        - 仅允许 <span class="chip">ws://</span>（拒绝 wss/其他协议）<br>
-        - 输入长度限制（昵称/消息）<br>
-        - 自动重连（指数退避 + 抖动）<br>
-        - 过滤控制字符，避免刷屏/注入<br>
-        - IME 友好：中文选词回车不会误发送<br>
-        - 客户端去重：避免“本地回显 + 服务器广播”显示两遍
-      </div>
-    </div>
-  </aside>
-
-  <main class="main">
-    <div class="topbar">
-      <div class="title">
-        <strong>MiniNetTalk 💬</strong>
-        <span id="topHint">自动连接中…</span>
-      </div>
-      <div class="actions">
-        <span class="chip"><span class="dot" id="dot2"></span><span id="status2">DISCONNECTED</span></span>
-      </div>
-    </div>
-
-    <div class="chat" id="chat"></div>
-
-    <div class="composer">
-      <div style="flex:1; display:flex; flex-direction:column; gap:6px">
-        <textarea class="textbox" id="msg" placeholder="输入消息…（Enter 发送，Shift+Enter 换行）" maxlength="2000"></textarea>
-        <div class="hint" id="hint">未连接：将自动重连…</div>
-      </div>
-      <button class="btn primary" id="sendBtn" disabled>发送</button>
-    </div>
-  </main>
+  <div class="composer">
+    <input id="sendMessage" class="input" placeholder="输入消息…（Enter 发送，Shift+Enter 换行）" />
+    <button id="btnSend" class="btn primary sendBtn" type="button">发送</button>
+  </div>
 </div>
 
 <script>
-  // -----------------------------
-  // Config / Security limits
-  // -----------------------------
-  const LIMITS = {
-    nameMax: 24,
-    msgMax: 2000,
-    // 防止过快发送导致刷屏（客户端侧节流）
-    minSendIntervalMs: 120
-  };
+  /**
+   * ✅ 目标：
+   * 1) 自动连接/重连（用户不填地址）
+   * 2) 指数退避 + 抖动，避免疯狂打后端
+   * 3) 防止“刷新/重连导致服务器死循环”：前端侧做“自发消息标记 + 去重/丢弃回环”
+   *
+   * ⚠️ 重要说明（避免误会）：
+   * - 如果你的后端写成“收到任何消息 -> 再 send() 回去给所有人（包括发送者）-> 发送者再自动回发”，那肯定会死循环。
+   * - 前端这里会在消息里加 clientId，并且收到自己发的回声会丢弃（可选：也可以展示为“已发送”气泡）。
+   * - 同时我们做了连接状态机，保证：同一时刻只有一个 WS 实例，重连计时器也不会叠加。
+   */
 
-  // 客户端唯一标识：用于“回显去重”
-  const CLIENT_ID = (crypto.randomUUID ? crypto.randomUUID() : (Date.now() + "-" + Math.random()));
-
-  // 用零宽字符+标签把 cid 藏在消息末尾（不影响肉眼显示）
-  const ZW = "\u200B"; // Zero-width space
-  function tagOutgoing(text) {
-    return text + ZW + `[cid:${CLIENT_ID}]`;
-  }
-  function stripCid(text) {
-    const m = text.match(/\u200B\[cid:([^\]]+)\]$/);
-    if (!m) return { clean: text, cid: null };
-    return { clean: text.slice(0, text.length - m[0].length), cid: m[1] };
+          // ====== 自动推导 WebSocket 地址（用户不需要填） ======
+          // 默认：与当前网页同源。http(s) -> ws(s)，路径用 /ws （你可按后端改）
+  const WS_PATH = "/ws"; // ← 如果你的后端不是 /ws，把这里改成 "/" 或 "/chat" 等
+  function computeWsUrl(){
+    const proto = (location.protocol === "https:") ? "wss:" : "ws:";
+    return `${proto}//${location.host}${WS_PATH}`;
   }
 
-  let ws = null;
-  let reconnectTimer = null;
-  let reconnectAttempt = 0;
-  let lastSendAt = 0;
+  // ====== 基础工具 ======
+  const $ = (id) => document.getElementById(id);
 
-  const chatEl = document.getElementById("chat");
-  const msgEl = document.getElementById("msg");
-  const nameEl = document.getElementById("userName");
-  const pathEl = document.getElementById("path");
-  const overrideEl = document.getElementById("override");
-  const sendBtn = document.getElementById("sendBtn");
-  const reconnectBtn = document.getElementById("reconnectBtn");
-
-  const statusEl = document.getElementById("status");
-  const statusEl2 = document.getElementById("status2");
-  const dotEl = document.getElementById("dot");
-  const dotEl2 = document.getElementById("dot2");
-  const endpointEl = document.getElementById("endpoint");
-  const topHintEl = document.getElementById("topHint");
-  const hintEl = document.getElementById("hint");
-
-  // -----------------------------
-  // Helpers
-  // -----------------------------
-  function nowTime() {
+  function nowTime(){
     const d = new Date();
-    return d.toLocaleTimeString([], {hour: "2-digit", minute:"2-digit"});
+    const hh = String(d.getHours()).padStart(2,"0");
+    const mm = String(d.getMinutes()).padStart(2,"0");
+    return `${hh}:${mm}`;
   }
 
-  // 过滤控制字符（保留 \n \t）
-  function sanitizeText(s) {
-    s = (s ?? "").toString();
-    // 去掉除 \n \t 以外的控制字符
-    s = s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "");
-    return s;
+  // 生成稳定 clientId：同一标签页刷新也能变（避免“旧连接残留 + 新连接”混淆）
+  // 但又不能每条消息都变，所以：每次加载生成一次
+  const clientId = (() => {
+    const arr = new Uint8Array(12);
+    crypto.getRandomValues(arr);
+    return Array.from(arr).map(b => b.toString(16).padStart(2,'0')).join('');
+  })();
+
+  $("clientIdText").textContent = clientId.slice(0, 10);
+  $("wsUrlText").textContent = computeWsUrl();
+
+  // ====== UI 写入 ======
+  function setStatus(connected, text){
+    $("statusText").textContent = text;
+    $("statusDot").classList.toggle("ok", !!connected);
+    $("btnDisconnect").disabled = !connected;
+    $("btnSend").disabled = !connected;
   }
 
-  function addSystem(text) {
+  function addSystem(text){
     const div = document.createElement("div");
-    div.className = "sys";
+    div.className = "system";
     div.textContent = text;
-    chatEl.appendChild(div);
-    chatEl.scrollTop = chatEl.scrollHeight;
+    $("messages").appendChild(div);
+    $("messages").scrollTop = $("messages").scrollHeight;
   }
 
-  function addBubble(text, who = "", isMe = false) {
-    const b = document.createElement("div");
-    b.className = "bubble" + (isMe ? " me" : "");
-    b.textContent = text;
+  function addBubble({me, sender, text, time}){
+    const row = document.createElement("div");
+    row.className = "row" + (me ? " me" : "");
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+
+    bubble.textContent = text;
 
     const meta = document.createElement("div");
     meta.className = "meta";
-    const whoEl = document.createElement("span");
-    whoEl.className = "who";
-    whoEl.textContent = who || (isMe ? "Me" : "Peer");
-    const timeEl = document.createElement("span");
-    timeEl.className = "time";
-    timeEl.textContent = nowTime();
-    meta.appendChild(whoEl);
-    meta.appendChild(timeEl);
 
-    b.appendChild(meta);
-    chatEl.appendChild(b);
-    chatEl.scrollTop = chatEl.scrollHeight;
+    const left = document.createElement("span");
+    left.className = "sender";
+    left.textContent = sender ?? "unknown";
+
+    const right = document.createElement("span");
+    right.className = "time";
+    right.textContent = time ?? nowTime();
+
+    meta.appendChild(left);
+    meta.appendChild(right);
+
+    bubble.appendChild(meta);
+    row.appendChild(bubble);
+
+    $("messages").appendChild(row);
+    $("messages").scrollTop = $("messages").scrollHeight;
   }
 
-  function setStatus(state) {
-    // state: "DISCONNECTED" | "CONNECTING" | "CONNECTED"
-    statusEl.textContent = state;
-    statusEl2.textContent = state;
+  // ====== 防回环：给每条消息加 envelope ======
+  // 约定 JSON（推荐）：{type:"chat", from:"name", clientId:"...", id:"...", text:"..."}
+  // 若后端还是纯文本，也可以：前端会 fallback 解析显示。
+  function makeMsgId(){
+    // 简单去重ID（时间+随机）
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
+  }
 
-    const dotClass = state === "CONNECTED" ? "ok" : (state === "CONNECTING" ? "mid" : "");
-    dotEl.className = "dot" + (dotClass ? " " + dotClass : "");
-    dotEl2.className = "dot" + (dotClass ? " " + dotClass : "");
-
-    sendBtn.disabled = state !== "CONNECTED";
-    msgEl.disabled = state !== "CONNECTED";
-
-    if (state === "CONNECTED") {
-      topHintEl.textContent = "已连接，开始聊天吧～";
-      hintEl.textContent = "Enter 发送｜Shift+Enter 换行";
-    } else if (state === "CONNECTING") {
-      topHintEl.textContent = "连接中…";
-      hintEl.textContent = "正在连接…";
-    } else {
-      topHintEl.textContent = "未连接：将自动重连";
-      hintEl.textContent = "未连接：将自动重连…";
+  const seenMsgIds = new Set(); // 防止重复显示（比如重连/服务器重复广播）
+  function rememberMsg(id){
+    if(!id) return;
+    seenMsgIds.add(id);
+    // 控制大小，避免无限增长
+    if(seenMsgIds.size > 2000){
+      // 简单清理：删一半
+      let i = 0;
+      for(const k of seenMsgIds){
+        seenMsgIds.delete(k);
+        if(++i > 1000) break;
+      }
     }
   }
 
-  // 同源推导 ws 地址：http -> ws；你说不支持 https/wss，所以只允许 ws
-  function buildWsUrl() {
-    const override = overrideEl.value.trim();
-    const WS_PATH = (pathEl.value.trim() || "/ws");
+  // ====== 连接状态机 + 指数退避 ======
+  let ws = null;
+  let manualClose = false;
 
-    let urlStr;
-    if (override) {
-      urlStr = override;
-    } else {
-      // file:// 打开时 location.host 为空，fallback 到 localhost:49999
-      const host = (location.host && location.protocol.startsWith("http"))
-              ? location.host
-              : "localhost:49999";
-      urlStr = `ws://${host}${WS_PATH.startsWith("/") ? WS_PATH : ("/" + WS_PATH)}`;
-    }
+  let reconnectTimer = null;
+  let attempt = 0;
 
-    // 安全：只允许 ws://
-    if (!/^ws:\/\//i.test(urlStr)) {
-      throw new Error("只允许 ws://（后端不支持 wss/https）");
-    }
+  const backoff = {
+    base: 500,    // 初始 0.5s
+    cap: 15000,   // 最大 15s
+    jitter: 0.25  // 抖动比例
+  };
 
-    // 使用 URL 解析，能正确处理 IPv6 方括号等
-    const u = new URL(urlStr);
-
-    // 限制 path 必须以 / 开头（防止奇怪拼接）
-    if (!u.pathname.startsWith("/")) u.pathname = "/" + u.pathname;
-
-    return u.toString();
-  }
-
-  function clearReconnectTimer() {
-    if (reconnectTimer) {
+  function clearReconnectTimer(){
+    if(reconnectTimer){
       clearTimeout(reconnectTimer);
       reconnectTimer = null;
     }
   }
 
-  function scheduleReconnect(reason = "") {
+  function scheduleReconnect(reason){
+    if(manualClose) return;
+
     clearReconnectTimer();
-    reconnectAttempt++;
+    attempt++;
 
-    // 指数退避 + 抖动（上限 12s）
-    const base = Math.min(12000, 400 * Math.pow(1.6, reconnectAttempt - 1));
-    const jitter = Math.random() * 220;
-    const delay = Math.round(base + jitter);
+    const exp = Math.min(backoff.cap, backoff.base * Math.pow(2, attempt - 1));
+    const rand = (Math.random() * 2 - 1) * backoff.jitter; // [-jitter, +jitter]
+    const delay = Math.max(200, Math.floor(exp * (1 + rand)));
 
-    addSystem(`连接断开${reason ? "（" + reason + "）" : ""}，${delay}ms 后自动重连…`);
-    setStatus("DISCONNECTED");
+    setStatus(false, `重连中…（第 ${attempt} 次，${delay}ms）`);
+    addSystem(`⚠️ 连接断开：${reason}，将在 ${delay}ms 后自动重连（指数退避）`);
 
     reconnectTimer = setTimeout(() => {
       connect();
     }, delay);
   }
 
-  // -----------------------------
-  // WebSocket lifecycle
-  // -----------------------------
-  function connect() {
+  function cleanupWs(){
+    if(!ws) return;
+    try{
+      ws.onopen = ws.onmessage = ws.onerror = ws.onclose = null;
+      if(ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING){
+        ws.close(1000, "client cleanup");
+      }
+    }catch(_){}
+    ws = null;
+  }
+
+  function connect(){
+    // 防止重复 connect 叠加造成“后端连接爆炸”
     clearReconnectTimer();
-    let url;
-    try {
-      url = buildWsUrl();
-    } catch (e) {
-      endpointEl.textContent = "（WS URL 无效）";
-      addSystem("WS URL 构造失败：" + e.message);
-      setStatus("DISCONNECTED");
+
+    // 如果已有连接/正在连接，就不再创建新的
+    if(ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)){
       return;
     }
 
-    endpointEl.textContent = url;
-    setStatus("CONNECTING");
+    manualClose = false;
 
-    try {
+    const url = computeWsUrl();
+    $("wsUrlText").textContent = url;
+
+    setStatus(false, "连接中…");
+    addSystem("🔌 正在连接服务器…");
+
+    try{
       ws = new WebSocket(url);
-    } catch (e) {
-      addSystem("WebSocket 创建失败：" + e.message);
-      ws = null;
+    }catch(e){
+      addSystem(`❌ WebSocket 创建失败：${e?.message ?? e}`);
       scheduleReconnect("创建失败");
       return;
     }
 
     ws.onopen = () => {
-      reconnectAttempt = 0;
-      addSystem("✅ 已连接");
-      setStatus("CONNECTED");
-      msgEl.focus();
+      attempt = 0;
+      setStatus(true, "已连接");
+      addSystem("✅ 连接成功");
+
+      // 可选：发一个 hello 让服务器记录昵称（但不要触发广播风暴）
+      // 这里用 type: "hello" 并要求后端不要广播 hello，只用于绑定 session 信息
+      safeSend({ type: "hello", clientId, from: getUserNameSafe(), ts: Date.now() });
     };
 
-    ws.onmessage = (ev) => {
-      // 安全：强制转字符串 + 清理控制字符 + 限制长度
-      let text = sanitizeText(String(ev.data ?? ""));
-      if (text.length > 8000) text = text.slice(0, 8000) + "…";
+    ws.onclose = (ev) => {
+      const reason = ev?.reason ? `${ev.reason}` : `code=${ev.code}`;
+      setStatus(false, manualClose ? "已断开" : "连接已断开");
+      addSystem(`🔌 连接关闭（${reason}）`);
+      cleanupWs();
 
-      // 简单解析 "name: message"
-      const idx = text.indexOf(": ");
-      if (idx > 0 && idx < 60) {
-        const who = sanitizeText(text.slice(0, idx)).slice(0, LIMITS.nameMax);
-        const bodyRaw = text.slice(idx + 2);
-
-        // 去重：如果是自己的 cid 回显，就忽略（因为本地已经显示过了）
-        const { clean, cid } = stripCid(bodyRaw);
-        if (cid && cid === CLIENT_ID) return;
-
-        addBubble(clean, who, false);
-      } else {
-        // 非标准格式，也照样显示
-        const { clean, cid } = stripCid(text);
-        if (cid && cid === CLIENT_ID) return;
-        addBubble(clean, "Server", false);
+      if(!manualClose){
+        scheduleReconnect(reason);
       }
     };
 
     ws.onerror = () => {
-      addSystem("⚠️ 连接发生错误（浏览器未提供详情）");
+      // onerror 一般不提供太多信息，最终会触发 onclose
+      addSystem("❗ 连接发生错误（将自动重连）");
     };
 
-    ws.onclose = (ev) => {
-      const reason = ev.reason ? ev.reason : "(none)";
-      const why = `code=${ev.code} reason=${reason}`;
-      ws = null;
-      scheduleReconnect(why);
+    ws.onmessage = (ev) => {
+      handleIncoming(ev.data);
     };
   }
 
-  function disconnect() {
+  function disconnect(){
+    manualClose = true;
     clearReconnectTimer();
-    if (ws) {
-      try { ws.close(1000, "client closing"); } catch (_) {}
-      ws = null;
+    if(ws){
+      try{ ws.close(1000, "manual close"); }catch(_){}
     }
-    reconnectAttempt = 0;
-    addSystem("已断开（手动）");
-    setStatus("DISCONNECTED");
+    cleanupWs();
+    setStatus(false, "已断开");
+    addSystem("⛔ 已手动断开连接");
   }
 
-  // -----------------------------
-  // Sending
-  // -----------------------------
-  function sendCurrent() {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  // ====== 发送与接收（防回环核心） ======
+  function getUserNameSafe(){
+    const raw = ($("userName").value || "").trim();
+    // 你要求：不填就是 null（字符串 null）
+    return raw.length ? raw : "null";
+  }
 
-    const now = Date.now();
-    if (now - lastSendAt < LIMITS.minSendIntervalMs) {
-      addSystem("发送太快啦～稍等一下 😵‍💫");
+  function safeSend(obj){
+    if(!ws || ws.readyState !== WebSocket.OPEN) return false;
+    try{
+      ws.send(JSON.stringify(obj));
+      return true;
+    }catch(e){
+      addSystem(`❌ 发送失败：${e?.message ?? e}`);
+      return false;
+    }
+  }
+
+  function sendChat(){
+    const text = $("sendMessage").value;
+    const trimmed = text.replace(/\s+$/g, "");
+    if(!trimmed) return;
+
+    if(!ws || ws.readyState !== WebSocket.OPEN){
+      addSystem("⚠️ 当前未连接，消息未发送（会自动重连）");
+      scheduleReconnect("未连接");
       return;
     }
-    lastSendAt = now;
 
-    const name = sanitizeText(nameEl.value.trim()).slice(0, LIMITS.nameMax) || "yuqi";
-    let msg = sanitizeText(msgEl.value);
+    const payload = {
+      type: "chat",
+      id: makeMsgId(),
+      clientId,
+      from: getUserNameSafe(),
+      text: trimmed,
+      ts: Date.now()
+    };
 
-    msg = msg.trimEnd();
-    if (!msg.trim()) return;
+    // 先在本地显示“我”的气泡（即使服务器会回声，也不会重复显示）
+    rememberMsg(payload.id);
+    addBubble({ me: true, sender: payload.from, text: payload.text, time: nowTime() });
 
-    if (msg.length > LIMITS.msgMax) msg = msg.slice(0, LIMITS.msgMax);
+    // 发送
+    safeSend(payload);
 
-    // 发送：在消息末尾附加 cid（用于去重）
-    ws.send(`${name}: ${tagOutgoing(msg)}`);
-
-    // 本地先显示一份（体验更像聊天软件）
-    addBubble(msg, name, true);
-
-    msgEl.value = "";
-    msgEl.focus();
+    $("sendMessage").value = "";
+    $("sendMessage").focus();
   }
 
-  // IME 友好：中文选词时 Enter 不发送
-  msgEl.addEventListener("keydown", (ev) => {
-    if (ev.key === "Enter" && !ev.shiftKey) {
-      if (ev.isComposing) return;
+  function handleIncoming(data){
+    // 1) 优先解析 JSON
+    let obj = null;
+    if(typeof data === "string"){
+      const s = data.trim();
+      if(s.startsWith("{") && s.endsWith("}")){
+        try{ obj = JSON.parse(s); }catch(_){}
+      }
+    }
+
+    // 2) 如果是我们定义的 envelope
+    if(obj && typeof obj === "object"){
+      // hello / ping 之类系统消息：不当成聊天重复刷屏
+      if(obj.type === "hello"){
+        return;
+      }
+      if(obj.type === "ping" || obj.type === "pong"){
+        // 如果你希望在 UI 上显示 ping，可以改成 addSystem
+        return;
+      }
+
+      if(obj.type === "chat"){
+        // ✅ 防回环：来自自己 clientId 的消息，直接丢弃（避免“自己看到两遍”）
+        // 说明：我们本地已经显示了自己发送的那条
+        if(obj.clientId && obj.clientId === clientId){
+          // 也可以在这里做“已送达”提示，但别再加新气泡
+          return;
+        }
+
+        // ✅ 去重：同 id 不重复显示
+        if(obj.id && seenMsgIds.has(obj.id)){
+          return;
+        }
+        rememberMsg(obj.id);
+
+        addBubble({
+          me: false,
+          sender: obj.from ?? "unknown",
+          text: String(obj.text ?? ""),
+          time: nowTime()
+        });
+        return;
+      }
+
+      // 其它类型：作为系统信息显示
+      addSystem(`📩 ${data}`);
+      return;
+    }
+
+    // 3) 纯文本 fallback（兼容你当前后端： "name: msg"）
+    // ✅ 防止自己看到两遍：如果后端会回显同样的 "null: xxx"，这仍可能重复
+    // 这里做一个“弱规则”：
+    // - 如果最近 1 秒内我刚发过同文本，则丢弃
+    // 但为了稳定，我们更推荐后端改成 JSON 并带 clientId / msgId
+    if(typeof data === "string"){
+      if(isLikelyEcho(data)){
+        return;
+      }
+      addBubble({ me: false, sender: "server", text: data, time: nowTime() });
+      return;
+    }
+
+    addSystem(`📦 收到非文本消息：${String(data)}`);
+  }
+
+  // ====== 纯文本回声抑制（fallback） ======
+  // 为了兼容旧后端：我们记录最近自己发的文本，短时间内收到同文本就当作回声丢弃
+  const recentSelfTexts = [];
+  function noteSelfText(t){
+    const now = Date.now();
+    recentSelfTexts.push({ t, now });
+    while(recentSelfTexts.length > 30) recentSelfTexts.shift();
+  }
+  function isLikelyEcho(incoming){
+    const now = Date.now();
+    // 清理过期（1.2s）
+    for(let i = recentSelfTexts.length - 1; i >= 0; i--){
+      if(now - recentSelfTexts[i].now > 1200){
+        recentSelfTexts.splice(0, i+1);
+        break;
+      }
+    }
+    // 匹配
+    return recentSelfTexts.some(x => x.t === incoming);
+  }
+
+  // 当我们发送本地气泡时，也记录一份“可能的纯文本回声”
+  const _origAddBubble = addBubble;
+  addBubble = function(payload){
+    if(payload && payload.me && typeof payload.text === "string"){
+      // 如果你的旧服务器回显格式是 "name: msg"
+      // 这里也顺便把那种格式记一下
+      noteSelfText(`${payload.sender}: ${payload.text}`);
+      noteSelfText(payload.text);
+    }
+    return _origAddBubble(payload);
+  };
+
+  // ====== 事件绑定 ======
+  $("btnSend").onclick = sendChat;
+
+  $("sendMessage").addEventListener("keydown", (ev) => {
+    if(ev.key === "Enter" && !ev.shiftKey){
       ev.preventDefault();
-      sendCurrent();
+      sendChat();
     }
   });
 
-  sendBtn.addEventListener("click", sendCurrent);
+  $("btnDisconnect").onclick = disconnect;
 
-  reconnectBtn.addEventListener("click", () => {
-    addSystem("🔁 手动重连…");
-    disconnect();
+  $("btnReconnect").onclick = () => {
+    addSystem("🔄 手动触发重连");
+    manualClose = false;
+    attempt = 0;
+    cleanupWs();
     connect();
-  });
+  };
 
+  // 页面可见性：回到前台时如果断线，立刻尝试连接（不叠加）
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) {
-      if (!ws || ws.readyState === WebSocket.CLOSED) {
+    if(document.visibilityState === "visible"){
+      if(!ws || ws.readyState === WebSocket.CLOSED){
         connect();
       }
     }
   });
 
-  // 初始化
-  setStatus("DISCONNECTED");
-  addSystem("欢迎使用 MiniNetTalk 👋 正在自动连接…");
+  // 避免刷新/关闭留下“幽灵连接”：尽量礼貌关闭
+  window.addEventListener("beforeunload", () => {
+    try{
+      manualClose = true;
+      clearReconnectTimer();
+      if(ws && ws.readyState === WebSocket.OPEN){
+        ws.close(1000, "page unload");
+      }
+    }catch(_){}
+  });
+
+  // ====== 启动自动连接 ======
+  setStatus(false, "准备连接…");
+  addSystem("✨ 客户端启动：自动连接中（带指数退避重连）");
   connect();
 </script>
 </body>
