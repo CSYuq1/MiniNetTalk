@@ -42,10 +42,11 @@ namespace minitalk::server {
             return fail(ec, "read");
         }
 
+        //debug 测试
         auto msg = beast::buffers_to_string(buffer_.data());
 
         std::cout << "[RECV] from session " << this
-                  << " : " << msg << "\n";
+            << " : " << msg << "\n";
 
         // send , on_send 会在里面被调用
         state_->send(beast::buffers_to_string(buffer_.data()));
@@ -59,15 +60,15 @@ namespace minitalk::server {
     }
 
     void websocket_session::send(std::shared_ptr<const std::string> const& msg) {
-        asio::post(ws_.get_executor(),//get ioc
+        asio::post(ws_.get_executor(), //get ioc
                    beast::bind_front_handler(
                                              &websocket_session::on_send,
-                                             shared_from_this(),msg
+                                             shared_from_this(), msg
                                             ));
     }
 
     void websocket_session::on_send(std::shared_ptr<std::string const> const& msg) {
-
+        //防止服务器被刷爆
         if (queue_.size() >= 1024) {
             // 丢弃/断开都行，至少别无限堆积
             return;
@@ -76,32 +77,29 @@ namespace minitalk::server {
         queue_.push_back(msg);
 
         //如果队列里已经有正在发送的消息，就什么都不做。
-        if (queue_.size()>1)
+        if (queue_.size() > 1)
             return;
 
         ws_.async_write(
-       asio::buffer(*queue_.front()),
-       beast::bind_front_handler(
-           &websocket_session::on_write,
-           shared_from_this()));
-
-
+                        asio::buffer(*queue_.front()),
+                        beast::bind_front_handler(
+                                                  &websocket_session::on_write,
+                                                  shared_from_this()));
     }
 
-    void websocket_session::on_write(error_code ec,[[maybe_unused]] std::size_t bytes_transferred) {
+    void websocket_session::on_write(error_code ec, [[maybe_unused]] std::size_t bytes_transferred) {
         //处理write 过程出现的错误
         if (ec)
-            return fail (ec,"write");
+            return fail(ec, "write");
         //写完，就清除队列元素 vector 元素排列紧凑，可以运用缓存，
         queue_.erase(queue_.begin());
 
         // Send the next message if any
-        if(! queue_.empty())
+        if (!queue_.empty())
             ws_.async_write(
-                asio::buffer(*queue_.front()),
-                beast::bind_front_handler(
-                    &websocket_session::on_write,
-                    shared_from_this()));
-
+                            asio::buffer(*queue_.front()),
+                            beast::bind_front_handler(
+                                                      &websocket_session::on_write,
+                                                      shared_from_this()));
     }
 }
